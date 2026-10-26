@@ -8,7 +8,11 @@ spring:
     database-platform: org.hibernate.dialect.H2Dialect
     hibernate:
       ddl-auto: create-drop
+  flyway:
+    enabled: false
 
 careerpilot:
+  supabase:
+    jwt-secret: test-secret-key-careerpilot-supabase-32chars!
   cors:
     allowed-origins: http://localhost:5173

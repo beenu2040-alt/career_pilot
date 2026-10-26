@@ -36,8 +36,21 @@ spring:
           lob:
             non_contextual_creation: true
 
+  flyway:
+    enabled: ${FLYWAY_ENABLED:false}
+    locations: classpath:db/migration
+    baseline-on-migrate: true
+
 # Application-specific properties
 careerpilot:
+  supabase:
+    # Option A: HMAC-SHA256 Secret (found in Supabase Settings > API > JWT Settings)
+    jwt-secret: ${SUPABASE_JWT_SECRET:}
+    # Option B: JWKS URI for RS256/ES256 asymmetric keys (https://<project-ref>.supabase.co/auth/v1/.well-known/jwks.json)
+    jwk-set-uri: ${SUPABASE_JWT_JWK_SET_URI:}
+    # Option C: Issuer URI (https://<project-ref>.supabase.co/auth/v1)
+    issuer-uri: ${SUPABASE_AUTH_ISSUER_URI:}
+
   cors:
     allowed-origins: ${CORS_ALLOWED_ORIGINS:http://localhost:5173,http://127.0.0.1:5173}
     allowed-methods: GET,POST,PUT,PATCH,DELETE,OPTIONS

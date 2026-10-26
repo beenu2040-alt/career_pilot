@@ -1,12 +1,14 @@
 import React, { useEffect, useState } from "react";
 import { Link, useLocation } from "react-router-dom";
-import { Compass, Activity, CheckCircle2, AlertCircle, RefreshCw } from "lucide-react";
+import { Compass, Activity, CheckCircle2, AlertCircle, RefreshCw, User as UserIcon, LogOut } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { fetchBackendHealth, type HealthResponse } from "@/lib/api";
+import { useAuth } from "@/context/AuthContext";
 
 export const Header: React.FC = () => {
   const location = useLocation();
+  const { user, signOut } = useAuth();
   const [health, setHealth] = useState<HealthResponse | null>(null);
   const [status, setStatus] = useState<"checking" | "connected" | "disconnected">("checking");
   const [isRefreshing, setIsRefreshing] = useState(false);
@@ -27,13 +29,13 @@ export const Header: React.FC = () => {
 
   useEffect(() => {
     checkHealth();
-    // Periodically poll every 30 seconds
     const interval = setInterval(checkHealth, 30000);
     return () => clearInterval(interval);
   }, []);
 
   const navLinks = [
     { name: "Overview", path: "/" },
+    { name: "Profile", path: "/profile", authOnly: true },
     { name: "Resume Studio", path: "/resume", badge: "Phase 1" },
     { name: "Career Roadmap", path: "/roadmap", badge: "Phase 2" },
     { name: "Application Tracker", path: "/applications", badge: "Phase 3" },
@@ -52,33 +54,36 @@ export const Header: React.FC = () => {
           </Link>
 
           <nav className="hidden md:flex items-center gap-1 text-sm font-medium">
-            {navLinks.map((link) => {
-              const isActive = location.pathname === link.path;
-              return (
-                <Link
-                  key={link.path}
-                  to={link.path}
-                  className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md transition-colors ${
-                    isActive
-                      ? "bg-secondary text-foreground font-semibold"
-                      : "text-muted-foreground hover:bg-secondary/50 hover:text-foreground"
-                  }`}
-                >
-                  {link.name}
-                  {link.badge && (
-                    <span className="text-[10px] px-1.5 py-0.5 rounded bg-muted text-muted-foreground border">
-                      {link.badge}
-                    </span>
-                  )}
-                </Link>
-              );
-            })}
+            {navLinks
+              .filter((link) => !link.authOnly || user)
+              .map((link) => {
+                const isActive = location.pathname === link.path;
+                return (
+                  <Link
+                    key={link.path}
+                    to={link.path}
+                    className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md transition-colors ${
+                      isActive
+                        ? "bg-secondary text-foreground font-semibold"
+                        : "text-muted-foreground hover:bg-secondary/50 hover:text-foreground"
+                    }`}
+                  >
+                    {link.name}
+                    {link.badge && (
+                      <span className="text-[10px] px-1.5 py-0.5 rounded bg-muted text-muted-foreground border">
+                        {link.badge}
+                      </span>
+                    )}
+                  </Link>
+                );
+              })}
           </nav>
         </div>
 
         <div className="flex items-center gap-3">
-          <div className="hidden sm:flex items-center gap-2 text-xs">
-            <span className="text-muted-foreground">Backend API:</span>
+          {/* Backend Health Badge */}
+          <div className="hidden lg:flex items-center gap-2 text-xs">
+            <span className="text-muted-foreground">API:</span>
             {status === "checking" && (
               <Badge variant="secondary" className="gap-1 animate-pulse">
                 <Activity className="h-3 w-3 text-muted-foreground" />
@@ -107,6 +112,44 @@ export const Header: React.FC = () => {
             >
               <RefreshCw className={`h-3.5 w-3.5 ${isRefreshing ? "animate-spin" : ""}`} />
             </Button>
+          </div>
+
+          {/* Authentication Actions */}
+          <div className="flex items-center gap-2 border-l pl-3">
+            {user ? (
+              <div className="flex items-center gap-2">
+                <Link to="/profile">
+                  <Button variant="ghost" size="sm" className="gap-2 text-xs">
+                    <div className="h-6 w-6 rounded-full bg-blue-100 text-blue-700 flex items-center justify-center font-bold text-[11px]">
+                      {user.email ? user.email.charAt(0).toUpperCase() : <UserIcon className="h-3.5 w-3.5" />}
+                    </div>
+                    <span className="hidden sm:inline max-w-[120px] truncate">{user.email}</span>
+                  </Button>
+                </Link>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="h-8 w-8 text-muted-foreground hover:text-destructive"
+                  onClick={() => signOut()}
+                  title="Sign Out"
+                >
+                  <LogOut className="h-4 w-4" />
+                </Button>
+              </div>
+            ) : (
+              <div className="flex items-center gap-2">
+                <Link to="/login">
+                  <Button variant="ghost" size="sm">
+                    Sign In
+                  </Button>
+                </Link>
+                <Link to="/register">
+                  <Button size="sm">
+                    Get Started
+                  </Button>
+                </Link>
+              </div>
+            )}
           </div>
         </div>
       </div>

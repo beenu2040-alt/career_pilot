@@ -1,17 +1,18 @@
-# CareerPilot AI — Phase 0: Project Foundation
+# CareerPilot AI — Career Development Platform
 
 CareerPilot AI is a production-minded career development SaaS application designed to help professionals navigate career transitions, optimize resumes for ATS standards, build customized skill development roadmaps, and track job application pipelines.
 
-This repository represents the completed **Phase 0: Project Foundation**, establishing the decoupled monorepo architecture, build setups, security baselines, and health verification endpoints.
+This repository contains the completed **Phase 0 (Project Foundation)** and **Phase 1 (Database & Authentication)** implementations.
 
 ---
 
 ## 1. Technology Stack
 
-- **Frontend**: React 18, TypeScript, Vite, Tailwind CSS, shadcn/ui components, React Router
-- **Backend**: Java 21 (LTS), Spring Boot 3.3.5 (Spring Web, Spring Validation, Spring Security, Spring Data JPA, PostgreSQL driver)
-- **Database**: Supabase PostgreSQL (Managed PostgreSQL with connection pooling)
-- **Authentication**: Supabase Auth (Planned for Phase 1)
+- **Frontend**: React 18, TypeScript, Vite, Tailwind CSS, shadcn/ui components, React Router, `@supabase/supabase-js`
+- **Backend**: Java 21 (LTS), Spring Boot 3.3.5 (Spring Web, Spring Validation, Spring Security OAuth2 Resource Server, Spring Data JPA, Flyway, PostgreSQL driver)
+- **Database**: Supabase PostgreSQL with version-controlled Flyway migrations & Row Level Security (RLS)
+- **Authentication**: Supabase Auth (Email & Password registration, login, session persistence, and password recovery)
+- **Backend Security**: Spring Security stateless filter chain with Supabase JWT signature and claims validation
 - **Version Control**: Git
 
 ---
@@ -22,172 +23,144 @@ This repository represents the completed **Phase 0: Project Foundation**, establ
 collage_project/
 ├── frontend/                     # React 18 + TypeScript + Vite SPA
 │   ├── src/
-│   │   ├── components/           # UI primitives (shadcn/ui) & Layouts
-│   │   ├── lib/                  # Utilities (cn helper, api client)
-│   │   ├── pages/                # Views (HomePage, PlaceholderPage, NotFound)
-│   │   ├── App.tsx               # Route declarations
-│   │   ├── index.css             # Tailwind design tokens
+│   │   ├── components/
+│   │   │   ├── auth/             # ProtectedRoute, PublicOnlyRoute
+│   │   │   ├── layout/           # Header, Footer, AppLayout
+│   │   │   └── ui/               # Button, Card, Badge (shadcn/ui primitives)
+│   │   ├── context/              # AuthContext (Supabase Auth state & actions)
+│   │   ├── lib/                  # supabase client, api client, utils
+│   │   ├── pages/
+│   │   │   ├── auth/             # LoginPage, RegisterPage, ForgotPassword, ResetPassword
+│   │   │   ├── HomePage.tsx      # Landing & diagnostic overview
+│   │   │   ├── ProfilePage.tsx   # User profile management (GET/PUT /api/profile)
+│   │   │   ├── PlaceholderPage.tsx # Phase 2 & 3 milestones
+│   │   │   └── NotFoundPage.tsx  # 404 page
+│   │   ├── App.tsx               # Route hierarchy
 │   │   └── main.tsx              # React DOM entrypoint
 │   ├── .env.example              # Frontend environment template
-│   ├── package.json              # NPM dependencies & scripts
-│   ├── tailwind.config.js        # Tailwind CSS theme configuration
-│   ├── tsconfig.json             # TypeScript compiler settings
-│   └── vite.config.ts            # Vite bundler & alias configuration
+│   └── package.json
 │
-├── backend/                      # Java Spring Boot 3 API
+├── backend/                      # Java Spring Boot 3 REST API
 │   ├── src/
 │   │   ├── main/
 │   │   │   ├── java/com/careerpilot/
-│   │   │   │   ├── config/       # SecurityConfig, CorsConfig, CorsProperties
-│   │   │   │   ├── controller/   # HealthController (/api/health)
-│   │   │   │   ├── dto/          # HealthResponse record
+│   │   │   │   ├── config/       # SecurityConfig, CorsConfig, JwtDecoderConfig
+│   │   │   │   ├── controller/   # HealthController, UserController, ProfileController
+│   │   │   │   ├── dto/          # HealthResponse, UserMeResponse, ProfileResponse/Request
+│   │   │   │   ├── entity/       # Profile, Skill, UserSkill, Job, Application
+│   │   │   │   ├── exception/    # GlobalExceptionHandler, ResourceNotFoundException
+│   │   │   │   ├── repository/   # ProfileRepository, SkillRepository, etc.
+│   │   │   │   ├── security/     # RestAuthenticationEntryPoint, SecurityUtils
+│   │   │   │   ├── service/      # ProfileService
 │   │   │   │   └── CareerPilotApplication.java
 │   │   │   └── resources/
-│   │   │       └── application.yml # Database, HikariCP, and CORS setup
+│   │   │       ├── db/
+│   │   │       │   ├── migration/ # V1__init_careerpilot_schema.sql, V2__enable_rls_policies.sql
+│   │   │       │   └── seed/      # dev_seed.sql (sample skills and jobs)
+│   │   │       └── application.yml # Datasource, Hikari, JWT, and CORS setup
 │   │   └── test/
-│   │       ├── java/com/careerpilot/ # HealthControllerTest, ContextTest
+│   │       ├── java/com/careerpilot/ # HealthControllerTest, UserControllerTest, ProfileControllerTest, etc.
 │   │       └── resources/
-│   │           └── application-test.yml # In-memory H2 test config
+│   │           └── application-test.yml # Isolated in-memory H2 configuration
 │   ├── .env.example              # Backend environment template
-│   └── pom.xml                   # Maven POM configuration
+│   └── pom.xml
 │
 ├── docs/                         # Project Documentation
-│   └── architecture.md           # System architecture & design specification
+│   ├── architecture.md           # High-level architecture & design
+│   └── phase-1-authentication.md # Comprehensive Supabase Auth & JWT setup guide
 │
-├── .gitignore                    # Comprehensive secrets & build artifact exclusions
-└── README.md                     # Getting started guide
+├── .gitignore                    # Secrets, node_modules, target/ exclusions
+└── README.md
 ```
 
 ---
 
-## 3. Prerequisites
+## 3. Environment Configuration
 
-Ensure the following tools are installed on your workstation:
-- **Node.js**: v20.x or higher (`node -v`)
-- **npm**: v10.x or higher (`npm -v`)
-- **Java**: JDK 21 LTS (`java -version`)
-- **Maven**: 3.9+ (`mvn -v`)
-- **Git**: 2.x+ (`git --version`)
-
----
-
-## 4. Environment Configuration
-
-### 4.1 Frontend Configuration
-
-Copy the example environment file in `frontend/`:
+### 3.1 Frontend (`frontend/.env`)
+Copy `frontend/.env.example` to `frontend/.env`:
 ```bash
 cp frontend/.env.example frontend/.env
 ```
+Fill in your Supabase project keys (Project Settings &gt; API):
+```bash
+VITE_API_BASE_URL=http://localhost:8080/api
+VITE_SUPABASE_URL=https://<your-project-ref>.supabase.co
+VITE_SUPABASE_ANON_KEY=<your-supabase-public-anon-key>
+```
 
-| Variable | Description | Default / Example |
-| :--- | :--- | :--- |
-| `VITE_API_BASE_URL` | Base URL of the Spring Boot API | `http://localhost:8080/api` |
-| `VITE_SUPABASE_URL` | Public Supabase project URL | `https://your-project-id.supabase.co` |
-| `VITE_SUPABASE_ANON_KEY` | Public Supabase anon key | *(Obtain from Supabase Dashboard)* |
-
-> **Security Note**: Never place the Supabase `service_role` key or database passwords in the frontend `.env`.
-
-### 4.2 Backend Configuration
-
-Copy the example environment file in `backend/`:
+### 3.2 Backend (`backend/.env`)
+Copy `backend/.env.example` to `backend/.env`:
 ```bash
 cp backend/.env.example backend/.env
 ```
+Configure your Supabase connection and JWT secret:
+```bash
+SERVER_PORT=8080
+SPRING_PROFILES_ACTIVE=dev
 
-| Variable | Description | Default / Example |
-| :--- | :--- | :--- |
-| `SERVER_PORT` | Port for the backend server | `8080` |
-| `SPRING_PROFILES_ACTIVE`| Active Spring profiles | `dev` |
-| `SUPABASE_DB_URL` | JDBC URL for Supabase PostgreSQL | `jdbc:postgresql://<host>:5432/postgres?sslmode=require` |
-| `SUPABASE_DB_USERNAME` | Supabase database username | `postgres` |
-| `SUPABASE_DB_PASSWORD` | Supabase database password | *(User provided)* |
-| `DB_POOL_MAX_SIZE` | Maximum HikariCP pool connections | `10` |
-| `DB_POOL_MIN_IDLE` | Minimum HikariCP idle connections | `2` |
-| `CORS_ALLOWED_ORIGINS` | Comma-delimited list of allowed origins | `http://localhost:5173,http://127.0.0.1:5173` |
+# Supabase PostgreSQL JDBC connection string
+SUPABASE_DB_URL=jdbc:postgresql://<db.your-project-ref.supabase.co>:5432/postgres?sslmode=require
+SUPABASE_DB_USERNAME=postgres
+SUPABASE_DB_PASSWORD=<your-database-password>
+
+# Enable Flyway migrations
+FLYWAY_ENABLED=true
+
+# Supabase JWT Secret (Project Settings > API > JWT Settings > JWT Secret)
+SUPABASE_JWT_SECRET=<your-supabase-jwt-secret-minimum-32-chars>
+```
 
 ---
 
-## 5. Local Setup & Running
+## 4. Database Migrations
 
-The frontend and backend are completely decoupled and can run independently.
+Database tables and Row Level Security (RLS) policies are version-controlled with Flyway:
+- `V1__init_careerpilot_schema.sql`: Creates `profiles`, `skills`, `user_skills`, `jobs`, and `applications` tables with constraints, indexes, and cascades.
+- `V2__enable_rls_policies.sql`: Enables RLS across all tables for direct Supabase client access.
+- `dev_seed.sql`: Isolated seed script containing tech skills and sample job postings for development.
 
-### 5.1 Running the Backend
+When connected to Supabase PostgreSQL, migrations execute automatically upon starting the backend with `FLYWAY_ENABLED=true`.
 
-From the repository root:
+---
+
+## 5. API Endpoints
+
+| Method | Endpoint | Access | Description |
+| :--- | :--- | :--- | :--- |
+| `GET` | `/api/health` | Public | Service health & version diagnostic |
+| `OPTIONS` | `/**` | Public | CORS preflight negotiation |
+| `GET` | `/api/me` | Authenticated | Current user identity, email, and roles from JWT |
+| `GET` | `/api/profile` | Authenticated | Retrieve authenticated user's profile |
+| `PUT` | `/api/profile` | Authenticated | Create or update authenticated user's profile |
+
+---
+
+## 6. How to Run Locally
+
+### Terminal 1: Backend
 ```bash
 cd backend
-
-# Build and execute all tests
-mvn test
-
-# Run the Spring Boot application
 mvn spring-boot:run
 ```
-The backend starts on `http://localhost:8080`.
 
-Verify the health check endpoint:
-```bash
-curl -i http://localhost:8080/api/health
-```
-Expected response:
-```json
-{
-  "status": "UP",
-  "service": "CareerPilot AI API",
-  "timestamp": "2026-10-26T...",
-  "version": "0.1.0"
-}
-```
-
-### 5.2 Running the Frontend
-
-In a separate terminal, from the repository root:
+### Terminal 2: Frontend
 ```bash
 cd frontend
-
-# Install dependencies (first time only)
-npm install
-
-# Start the Vite development server
 npm run dev
 ```
-Open your browser at `http://localhost:5173`. The application shell will load and automatically verify connectivity to the backend via `GET /api/health`.
+Open [http://localhost:5173](http://localhost:5173) in your browser.
 
 ---
 
-## 6. Verification & Quality Gates
-
-Run the verification suite across both subprojects:
+## 7. Verification & Tests
 
 ```bash
-# 1. Frontend production build and TypeScript check
+# 1. Run frontend build & type check
 cd frontend && npm run build
 
-# 2. Backend unit/slice tests and compilation
-cd ../backend && mvn clean test
+# 2. Run backend test suite (18 unit & integration tests)
+cd ../backend && mvn test
 ```
 
----
-
-## 7. Connecting to Supabase PostgreSQL (When Ready)
-
-1. Create a Supabase project at [supabase.com](https://supabase.com).
-2. Go to **Project Settings** > **Database**.
-3. Under **Connection string**, select **JDBC** (or copy host, port, db name).
-4. Update `backend/.env` with your host, port, username, and password:
-   ```bash
-   SUPABASE_DB_URL=jdbc:postgresql://<db.your-project-ref.supabase.co>:5432/postgres?sslmode=require
-   SUPABASE_DB_USERNAME=postgres
-   SUPABASE_DB_PASSWORD=your_actual_password
-   ```
-5. Restart the backend application.
-
----
-
-## 8. Next Steps (Phase 1 Preview)
-
-- Implement Supabase Auth integration (JWT authentication filter in Spring Security).
-- Connect user sessions between the React frontend and Spring Boot backend.
-- Define JPA entities for user profiles, resumes, and career roadmaps.
-- Implement the Resume Studio ATS optimization service.
+For full setup details and architecture decisions, see [docs/phase-1-authentication.md](file:///home/captain/collage_project/docs/phase-1-authentication.md).

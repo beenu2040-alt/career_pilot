@@ -2,7 +2,11 @@ package com.careerpilot.controller;
 
 import com.careerpilot.config.CorsConfig;
 import com.careerpilot.config.CorsProperties;
+import com.careerpilot.config.JwtDecoderConfig;
+import com.careerpilot.config.JwtProperties;
 import com.careerpilot.config.SecurityConfig;
+import com.careerpilot.security.RestAccessDeniedHandler;
+import com.careerpilot.security.RestAuthenticationEntryPoint;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -19,15 +23,21 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
 @WebMvcTest(controllers = HealthController.class)
-@Import({SecurityConfig.class, CorsConfig.class})
-@EnableConfigurationProperties(CorsProperties.class)
+@Import({
+    SecurityConfig.class,
+    CorsConfig.class,
+    RestAuthenticationEntryPoint.class,
+    RestAccessDeniedHandler.class,
+    JwtDecoderConfig.class
+})
+@EnableConfigurationProperties({CorsProperties.class, JwtProperties.class})
 class HealthControllerTest {
 
     @Autowired
     private MockMvc mockMvc;
 
     @Test
-    @DisplayName("GET /api/health returns 200 OK with UP status and service metadata")
+    @DisplayName("GET /api/health returns 200 OK with UP status and service metadata without authentication")
     void shouldReturnHealthStatusUp() throws Exception {
         mockMvc.perform(get("/api/health")
                 .accept(MediaType.APPLICATION_JSON))
