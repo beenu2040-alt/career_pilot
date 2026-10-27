@@ -35,7 +35,7 @@ interface NavItem {
 const navItems: NavItem[] = [
   { name: "Overview", path: "/dashboard", icon: LayoutDashboard },
   { name: "Find Jobs", path: "/jobs", icon: Search },
-  { name: "Resume Analyzer", path: "/resume-analyzer", icon: FileText, badge: "Roadmap", badgeVariant: "secondary" },
+  { name: "Resume Analyzer", path: "/resume-analyzer", icon: FileText },
   { name: "Career Roadmap", path: "/roadmap", icon: Compass, badge: "Roadmap", badgeVariant: "secondary" },
   { name: "Resume Tailor", path: "/resume-tailor", icon: Wand2, badge: "Roadmap", badgeVariant: "secondary" },
   { name: "Applications", path: "/applications", icon: Send, badge: "Roadmap", badgeVariant: "secondary" },

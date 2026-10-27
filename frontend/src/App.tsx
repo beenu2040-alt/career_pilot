@@ -1,7 +1,6 @@
 import React from "react";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import {
-  FileText,
   Compass,
   Wand2,
   Send,
@@ -22,6 +21,7 @@ import { ResetPasswordPage } from "@/pages/auth/ResetPasswordPage";
 import { DashboardPage } from "@/pages/DashboardPage";
 import { ProfilePage } from "@/pages/ProfilePage";
 import { JobsPage } from "@/pages/jobs/JobsPage";
+import { ResumePage } from "@/pages/resume/ResumePage";
 import { PlaceholderPage } from "@/pages/PlaceholderPage";
 import { NotFoundPage } from "@/pages/NotFoundPage";
 
@@ -55,24 +55,9 @@ export const App: React.FC = () => {
               {/* 1. Find Jobs (Phase 3 Full Feature) */}
               <Route path="jobs" element={<JobsPage />} />
 
-              {/* 2. Resume Analyzer (Phase 4 Roadmap) */}
-              <Route
-                path="resume-analyzer"
-                element={
-                  <PlaceholderPage
-                    title="Resume Analyzer"
-                    phase="Phase 4 Roadmap"
-                    description="Automated resume parsing, applicant tracking system (ATS) keyword matching, and section-by-section scoring."
-                    icon={<FileText className="h-7 w-7 text-emerald-700" />}
-                    plannedFeatures={[
-                      "PDF/DOCX file upload and text extraction pipeline",
-                      "ATS keyword density and formatting audit",
-                      "Action verb strength and quantifiable metric detection",
-                      "Target role compatibility scoring engine",
-                    ]}
-                  />
-                }
-              />
+              {/* 2. Resume Analyzer (Phase 4 Full Feature) */}
+              <Route path="resume-analyzer" element={<ResumePage />} />
+              <Route path="resume" element={<Navigate to="/resume-analyzer" replace />} />
 
               {/* 3. Career Roadmap (Phase 4 Roadmap) */}
               <Route

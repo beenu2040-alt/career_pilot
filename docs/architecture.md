@@ -185,18 +185,21 @@ Strict separation of concerns is maintained across environments:
 flowchart LR
     P0["Phase 0: Project Foundation"] --> P1["Phase 1: Auth & Profiles"]
     P1 --> P2["Phase 2: UI/UX & Design System"]
-    P2 --> P3["Phase 3: Job Discovery & Matching (Current)"]
-    P3 --> P4["Phase 4: AI Resume & Career Roadmap"]
+    P2 --> P3["Phase 3: Job Discovery & Matching"]
+    P3 --> P4["Phase 4: AI Resume Analyzer (Current)"]
+    P4 --> P5["Phase 5: Career Roadmap & Applications"]
 
     style P0 fill:#2563eb,stroke:#1d4ed8,color:#ffffff
     style P1 fill:#2563eb,stroke:#1d4ed8,color:#ffffff
     style P2 fill:#2563eb,stroke:#1d4ed8,color:#ffffff
     style P3 fill:#2563eb,stroke:#1d4ed8,color:#ffffff
-    style P4 fill:#f8fafc,stroke:#cbd5e1,color:#0f172a
+    style P4 fill:#2563eb,stroke:#1d4ed8,color:#ffffff
+    style P5 fill:#f8fafc,stroke:#cbd5e1,color:#0f172a
 ```
 
 - **Phase 0 (Completed)**: Monorepo layout, React + Vite setup, Tailwind & shadcn UI shell, Spring Boot 3 with JPA & Security, Health endpoint, CORS policy, Supabase environment wiring, Git discipline.
 - **Phase 1 (Completed)**: Supabase Auth integration, Spring Security JWT filter, Profile & Skills schema (`V1`, `V2`), Flyway migrations, Profile API.
 - **Phase 2 (Completed)**: Reusable SaaS design system, consistent dashboard shell, responsive mobile sidebar/drawer, authentication guards, user settings.
 - **Phase 3 (Completed)**: Job catalog search & filters, explainable skill matching engine, normalized `job_skills` and `saved_jobs` (`V3`), recommendations, bookmarking, skills inventory on profile.
-- **Phase 4 (Next)**: AI resume parsing, tailored bullet generation, ATS optimization, and personalized career roadmaps.
+- **Phase 4 (Completed)**: Secure PDF resume upload & parsing (PDFBox), Supabase/local storage isolation, 4-dimension explainable scoring rubric (0–100), LLM and deterministic fallback analysis, target role matching and bullet rewrites (`V4`).
+- **Phase 5 (Next)**: Career trajectory graphs, milestone learning paths, and application tracking pipeline.

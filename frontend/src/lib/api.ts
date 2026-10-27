@@ -442,3 +442,246 @@ export async function removeUserSkill(
     throw new Error(errorData.message || `Failed to remove skill (HTTP ${response.status})`);
   }
 }
+
+// ============================================================================
+// Phase 4: Resume Analyzer & LLM Feedback Types & APIs
+// ============================================================================
+
+export interface ResumeSummary {
+  id: string;
+  originalFilename: string;
+  fileSize: number;
+  mimeType: string;
+  processingStatus: 'UPLOADED' | 'PROCESSING' | 'COMPLETED' | 'FAILED';
+  createdAt: string;
+  updatedAt: string;
+  latestScore: number | null;
+  latestAnalysisId: string | null;
+}
+
+export interface DimensionScore {
+  dimension: string;
+  score: number;
+  maxScore: number;
+  weightPercentage: number;
+  assessmentType: 'DETERMINISTIC' | 'MODEL_ASSESSED' | 'HYBRID';
+  feedback: string;
+}
+
+export interface ExtractedData {
+  candidateName: string;
+  email: string;
+  phone: string;
+  location: string;
+  detectedSections: string[];
+  wordCount: number;
+  quantifiableMetricsCount: number;
+  education: string[];
+  roles: string[];
+}
+
+export interface StrengthItem {
+  title: string;
+  description: string;
+  evidence: string;
+}
+
+export interface ImprovementItem {
+  priority: 'HIGH' | 'MEDIUM' | 'LOW';
+  category: string;
+  title: string;
+  issue: string;
+  suggestion: string;
+  exampleBefore: string;
+  exampleAfter: string;
+}
+
+export interface SkillEvidenceItem {
+  name: string;
+  category: string;
+  hasContext: boolean;
+  evidence: string;
+}
+
+export interface SkillAnalysis {
+  technicalSkills: SkillEvidenceItem[];
+  softSkills: SkillEvidenceItem[];
+  skillsWithoutEvidence: string[];
+}
+
+export interface ExperienceAnalysis {
+  totalRolesIdentified: number;
+  actionVerbRating: 'STRONG' | 'MODERATE' | 'NEEDS_IMPROVEMENT';
+  quantifiableMetricRating: string;
+  roleSummaries: string[];
+}
+
+export interface JobMatchAnalysis {
+  jobId: string;
+  jobTitle: string;
+  company: string;
+  matchedSkills: string[];
+  missingRequiredSkills: string[];
+  missingOptionalSkills: string[];
+  matchScore: number;
+  tailoredRecommendations: string[];
+}
+
+export interface ResumeAnalysis {
+  id: string;
+  resumeId: string;
+  jobId: string | null;
+  analysisStatus: 'PENDING' | 'PROCESSING' | 'COMPLETED' | 'FAILED';
+  overallScore: number;
+  summary: string;
+  dimensionScores: DimensionScore[];
+  extractedData: ExtractedData;
+  strengths: StrengthItem[];
+  improvements: ImprovementItem[];
+  skillAnalysis: SkillAnalysis;
+  experienceAnalysis: ExperienceAnalysis;
+  jobMatch: JobMatchAnalysis | null;
+  modelIdentifier: string;
+  createdAt: string;
+  completedAt: string;
+}
+
+export async function uploadResume(
+  file: File,
+  accessToken: string
+): Promise<ResumeSummary> {
+  const formData = new FormData();
+  formData.append('file', file);
+
+  const response = await fetch(`${API_BASE_URL}/resumes`, {
+    method: 'POST',
+    headers: {
+      'Authorization': `Bearer ${accessToken}`,
+      'Accept': 'application/json',
+    },
+    body: formData,
+  });
+
+  if (!response.ok) {
+    const errorData = await response.json().catch(() => ({}));
+    throw new Error(errorData.message || `Failed to upload resume (HTTP ${response.status})`);
+  }
+
+  return response.json();
+}
+
+export async function fetchUserResumes(
+  accessToken: string
+): Promise<ResumeSummary[]> {
+  const response = await fetch(`${API_BASE_URL}/resumes`, {
+    headers: {
+      'Authorization': `Bearer ${accessToken}`,
+      'Accept': 'application/json',
+    },
+  });
+
+  if (!response.ok) {
+    const errorData = await response.json().catch(() => ({}));
+    throw new Error(errorData.message || `Failed to fetch resumes (HTTP ${response.status})`);
+  }
+
+  return response.json();
+}
+
+export async function fetchResumeById(
+  resumeId: string,
+  accessToken: string
+): Promise<ResumeSummary> {
+  const response = await fetch(`${API_BASE_URL}/resumes/${resumeId}`, {
+    headers: {
+      'Authorization': `Bearer ${accessToken}`,
+      'Accept': 'application/json',
+    },
+  });
+
+  if (!response.ok) {
+    const errorData = await response.json().catch(() => ({}));
+    throw new Error(errorData.message || `Failed to fetch resume (HTTP ${response.status})`);
+  }
+
+  return response.json();
+}
+
+export async function deleteResume(
+  resumeId: string,
+  accessToken: string
+): Promise<void> {
+  const response = await fetch(`${API_BASE_URL}/resumes/${resumeId}`, {
+    method: 'DELETE',
+    headers: {
+      'Authorization': `Bearer ${accessToken}`,
+    },
+  });
+
+  if (!response.ok) {
+    const errorData = await response.json().catch(() => ({}));
+    throw new Error(errorData.message || `Failed to delete resume (HTTP ${response.status})`);
+  }
+}
+
+export async function triggerResumeAnalysis(
+  resumeId: string,
+  accessToken: string,
+  jobId?: string
+): Promise<ResumeAnalysis> {
+  const response = await fetch(`${API_BASE_URL}/resumes/${resumeId}/analyze`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'Accept': 'application/json',
+      'Authorization': `Bearer ${accessToken}`,
+    },
+    body: JSON.stringify(jobId ? { jobId } : {}),
+  });
+
+  if (!response.ok) {
+    const errorData = await response.json().catch(() => ({}));
+    throw new Error(errorData.message || `Analysis failed (HTTP ${response.status})`);
+  }
+
+  return response.json();
+}
+
+export async function fetchResumeAnalyses(
+  resumeId: string,
+  accessToken: string
+): Promise<ResumeAnalysis[]> {
+  const response = await fetch(`${API_BASE_URL}/resumes/${resumeId}/analyses`, {
+    headers: {
+      'Authorization': `Bearer ${accessToken}`,
+      'Accept': 'application/json',
+    },
+  });
+
+  if (!response.ok) {
+    const errorData = await response.json().catch(() => ({}));
+    throw new Error(errorData.message || `Failed to fetch analyses (HTTP ${response.status})`);
+  }
+
+  return response.json();
+}
+
+export async function fetchResumeAnalysisById(
+  resumeId: string,
+  analysisId: string,
+  accessToken: string
+): Promise<ResumeAnalysis> {
+  const response = await fetch(`${API_BASE_URL}/resumes/${resumeId}/analyses/${analysisId}`, {
+    headers: {
+      'Authorization': `Bearer ${accessToken}`,
+      'Accept': 'application/json',
+    },
+  });
+
+  if (!response.ok) {
+    const errorData = await response.json().catch(() => ({}));
+    throw new Error(errorData.message || `Failed to fetch analysis (HTTP ${response.status})`);
+  }
+
+  return response.json();
+}

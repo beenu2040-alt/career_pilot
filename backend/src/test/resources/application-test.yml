@@ -12,6 +12,13 @@ spring:
     enabled: false
 
 careerpilot:
+  resume:
+    max-file-size: 10485760
+    storage-bucket: test-resumes
+    local-storage-path: target/test-storage/resumes
+  ai:
+    provider: fallback
+    model: test-model
   supabase:
     jwt-secret: test-secret-key-careerpilot-supabase-32chars!
   cors:
