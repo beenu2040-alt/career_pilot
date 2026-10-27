@@ -4,6 +4,8 @@ import { fetchUserProfile, updateUserProfile, type ProfileResponse } from '@/lib
 import { Button } from '@/components/ui/button';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
+import { Input } from '@/components/ui/input';
+import { Skeleton } from '@/components/ui/skeleton';
 import { 
   User as UserIcon, 
   ShieldCheck, 
@@ -15,7 +17,10 @@ import {
   Save,
   Clock,
   MapPin,
-  Briefcase
+  Briefcase,
+  RefreshCw,
+  Mail,
+  Fingerprint
 } from 'lucide-react';
 
 export const ProfilePage: React.FC = () => {
@@ -31,58 +36,69 @@ export const ProfilePage: React.FC = () => {
   const [isSaving, setIsSaving] = useState(false);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const [validationErrors, setValidationErrors] = useState<Record<string, string>>({});
   const [isNewProfile, setIsNewProfile] = useState(false);
 
+  const loadProfile = async () => {
+    if (!accessToken) {
+      setIsLoading(false);
+      return;
+    }
+
+    setIsLoading(true);
+    setErrorMessage(null);
+
+    try {
+      const data = await fetchUserProfile(accessToken);
+      if (data) {
+        setProfile(data);
+        setFullName(data.fullName || '');
+        setHeadline(data.headline || '');
+        setLocation(data.location || '');
+        setTargetRole(data.targetRole || '');
+        setIsNewProfile(false);
+      } else {
+        setIsNewProfile(true);
+        setFullName(user?.user_metadata?.full_name || '');
+      }
+    } catch (err) {
+      setErrorMessage((err as Error).message || 'Failed to connect to backend profile service.');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   useEffect(() => {
-    let isMounted = true;
-
-    const loadProfile = async () => {
-      if (!accessToken) {
-        setIsLoading(false);
-        return;
-      }
-
-      setIsLoading(true);
-      setErrorMessage(null);
-
-      try {
-        const data = await fetchUserProfile(accessToken);
-        if (isMounted) {
-          if (data) {
-            setProfile(data);
-            setFullName(data.fullName || '');
-            setHeadline(data.headline || '');
-            setLocation(data.location || '');
-            setTargetRole(data.targetRole || '');
-            setIsNewProfile(false);
-          } else {
-            setIsNewProfile(true);
-            // Default full name from auth metadata if available
-            setFullName(user?.user_metadata?.full_name || '');
-          }
-        }
-      } catch (err) {
-        if (isMounted) {
-          setErrorMessage((err as Error).message || 'Failed to connect to backend profile service.');
-        }
-      } finally {
-        if (isMounted) {
-          setIsLoading(false);
-        }
-      }
-    };
-
     loadProfile();
-
-    return () => {
-      isMounted = false;
-    };
   }, [accessToken, user]);
+
+  const validate = (): boolean => {
+    const errors: Record<string, string> = {};
+    if (fullName.length > 255) {
+      errors.fullName = 'Full name must not exceed 255 characters';
+    }
+    if (headline.length > 255) {
+      errors.headline = 'Headline must not exceed 255 characters';
+    }
+    if (location.length > 255) {
+      errors.location = 'Location must not exceed 255 characters';
+    }
+    if (targetRole.length > 255) {
+      errors.targetRole = 'Target role must not exceed 255 characters';
+    }
+
+    setValidationErrors(errors);
+    return Object.keys(errors).length === 0;
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!accessToken) {
       setErrorMessage('Authentication session expired. Please sign in again.');
+      return;
+    }
+
+    if (!validate()) {
       return;
     }
 
@@ -92,15 +108,20 @@ export const ProfilePage: React.FC = () => {
 
     try {
       const updated = await updateUserProfile(accessToken, {
-        fullName,
-        headline,
-        location,
-        targetRole,
+        fullName: fullName.trim(),
+        headline: headline.trim(),
+        location: location.trim(),
+        targetRole: targetRole.trim(),
       });
 
       setProfile(updated);
       setIsNewProfile(false);
-      setSuccessMessage('Profile successfully saved to Supabase PostgreSQL!');
+      setSuccessMessage('Profile saved successfully and synchronized with Supabase PostgreSQL.');
+      
+      // Auto-dismiss success notification after 5 seconds
+      setTimeout(() => {
+        setSuccessMessage(null);
+      }, 5000);
     } catch (err) {
       setErrorMessage((err as Error).message || 'Failed to update profile.');
     } finally {
@@ -108,83 +129,92 @@ export const ProfilePage: React.FC = () => {
     }
   };
 
-  if (isLoading) {
-    return (
-      <div className="container mx-auto flex min-h-[60vh] items-center justify-center px-4">
-        <div className="flex flex-col items-center gap-2 text-muted-foreground">
-          <Loader2 className="h-8 w-8 animate-spin text-blue-600" />
-          <p className="text-sm">Loading profile from backend...</p>
-        </div>
-      </div>
-    );
-  }
-
   return (
-    <div className="container mx-auto max-w-5xl px-4 py-10 sm:px-8">
-      {/* Header Info */}
-      <div className="mb-8 flex flex-col md:flex-row md:items-center justify-between gap-4 border-b pb-6">
+    <div className="space-y-8">
+      {/* Top Banner & Header */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-slate-200 pb-5">
         <div>
-          <div className="flex items-center gap-2">
-            <h1 className="text-3xl font-bold tracking-tight text-slate-900">Career Profile</h1>
-            <Badge variant="success" className="gap-1 text-xs">
-              <ShieldCheck className="h-3.5 w-3.5 text-emerald-600" /> Authenticated
-            </Badge>
-          </div>
-          <p className="text-sm text-muted-foreground mt-1">
-            Manage your personal profile and career target preferences. Secured via Supabase Auth & Spring Security.
+          <h2 className="text-2xl font-bold tracking-tight text-slate-900">Career Profile</h2>
+          <p className="text-xs text-muted-foreground mt-1">
+            Manage your personal identifiers and target position to power precision career recommendations.
           </p>
         </div>
 
-        <div className="flex items-center gap-3">
-          <Button variant="outline" size="sm" onClick={() => signOut()}>
+        <div className="flex items-center gap-2">
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={loadProfile}
+            disabled={isLoading || isSaving}
+            className="text-xs h-9 gap-1.5"
+          >
+            <RefreshCw className={`h-3.5 w-3.5 ${isLoading ? "animate-spin" : ""}`} />
+            Refresh Data
+          </Button>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => signOut()}
+            className="text-xs h-9 text-slate-600 hover:text-rose-600 hover:border-rose-200"
+          >
             Sign Out
           </Button>
         </div>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-        {/* Left Column: Identity & Security Card */}
+        {/* Left Column: Supabase Identity & Metadata Card */}
         <div className="space-y-6">
-          <Card>
-            <CardHeader className="pb-3">
-              <CardTitle className="text-base flex items-center gap-2">
-                <UserIcon className="h-4 w-4 text-blue-600" /> Authenticated Identity
+          <Card className="border-slate-200 shadow-sm">
+            <CardHeader className="pb-3 border-b border-slate-100">
+              <CardTitle className="text-sm font-semibold flex items-center gap-2 text-slate-900">
+                <ShieldCheck className="h-4 w-4 text-blue-700" />
+                Verified Identity
               </CardTitle>
-              <CardDescription>Verified Supabase Claims</CardDescription>
+              <CardDescription>
+                Cryptographic authentication claims from Supabase Auth.
+              </CardDescription>
             </CardHeader>
-            <CardContent className="text-xs space-y-3 font-mono">
+            <CardContent className="pt-4 space-y-3.5 text-xs font-mono">
               <div>
-                <span className="text-slate-400 block text-[10px] uppercase">Supabase User UUID</span>
-                <span className="text-slate-800 break-all select-all font-semibold">{user?.id}</span>
+                <span className="text-[10px] text-slate-400 block uppercase font-semibold">User UUID (Subject)</span>
+                <span className="text-slate-800 break-all select-all font-medium">{user?.id}</span>
               </div>
               <div>
-                <span className="text-slate-400 block text-[10px] uppercase">Registered Email</span>
-                <span className="text-slate-800 break-all">{user?.email}</span>
-              </div>
-              <div>
-                <span className="text-slate-400 block text-[10px] uppercase">Email Confirmed</span>
-                <span className={user?.confirmed_at ? "text-emerald-600 font-bold" : "text-amber-600"}>
-                  {user?.confirmed_at ? "Confirmed" : "Pending Confirmation"}
+                <span className="text-[10px] text-slate-400 block uppercase font-semibold">Email</span>
+                <span className="text-slate-800 break-all flex items-center gap-1.5 font-sans font-medium">
+                  <Mail className="h-3.5 w-3.5 text-slate-400" /> {user?.email}
                 </span>
               </div>
-              <div className="pt-2 border-t text-[11px] font-sans text-muted-foreground space-y-1.5">
-                <div className="flex items-center gap-1.5 text-emerald-700">
+              <div>
+                <span className="text-[10px] text-slate-400 block uppercase font-semibold">Email Verification</span>
+                <span className="flex items-center gap-1 font-sans">
+                  {user?.confirmed_at ? (
+                    <Badge variant="success" className="text-[10px]">Verified</Badge>
+                  ) : (
+                    <Badge variant="warning" className="text-[10px]">Pending Confirmation</Badge>
+                  )}
+                </span>
+              </div>
+              <div className="pt-2 border-t border-slate-100 space-y-2 font-sans text-[11px] text-muted-foreground">
+                <div className="flex items-center gap-2 text-emerald-700">
                   <CheckCircle2 className="h-3.5 w-3.5 shrink-0" />
-                  <span>Spring Security JWT Signature Validated</span>
+                  <span>Enforced at API Gateway (OAuth2 JWT)</span>
                 </div>
-                <div className="flex items-center gap-1.5 text-blue-700">
+                <div className="flex items-center gap-2 text-blue-700">
                   <Database className="h-3.5 w-3.5 shrink-0" />
-                  <span>Enforces User Ownership in JPA Queries</span>
+                  <span>PostgreSQL Ownership Validated</span>
                 </div>
               </div>
             </CardContent>
           </Card>
 
+          {/* Metadata Card */}
           {profile && (
-            <Card className="bg-slate-50/50">
+            <Card className="border-slate-200 bg-slate-50/50">
               <CardHeader className="pb-2">
-                <CardTitle className="text-xs font-semibold uppercase tracking-wider text-slate-500 flex items-center gap-1">
-                  <Clock className="h-3.5 w-3.5" /> Metadata
+                <CardTitle className="text-xs font-semibold uppercase tracking-wider text-slate-500 flex items-center gap-1.5">
+                  <Clock className="h-3.5 w-3.5" /> Record Timestamps
                 </CardTitle>
               </CardHeader>
               <CardContent className="text-xs text-muted-foreground space-y-1">
@@ -195,113 +225,128 @@ export const ProfilePage: React.FC = () => {
           )}
         </div>
 
-        {/* Right Column: Edit Profile Form */}
+        {/* Right 2 Columns: Edit Profile Form */}
         <div className="lg:col-span-2 space-y-6">
-          <Card className="shadow-sm">
-            <CardHeader>
+          <Card className="border-slate-200 shadow-sm">
+            <CardHeader className="border-b border-slate-100 pb-4">
               <div className="flex items-center justify-between">
                 <div>
-                  <CardTitle className="text-xl">Profile Details</CardTitle>
+                  <CardTitle className="text-lg text-slate-900">Personal & Target Role Details</CardTitle>
                   <CardDescription>
-                    Information utilized across the Resume Studio and Career Roadmap.
+                    Information used across CareerPilot to benchmark your competencies against market demand.
                   </CardDescription>
                 </div>
                 {isNewProfile && (
                   <Badge variant="secondary" className="gap-1 text-xs">
-                    <Sparkles className="h-3 w-3 text-blue-500" /> New Profile
+                    <Sparkles className="h-3 w-3 text-blue-600" /> New Profile
                   </Badge>
                 )}
               </div>
             </CardHeader>
 
-            <CardContent>
+            <CardContent className="pt-6">
+              {/* Notifications */}
               {successMessage && (
-                <div className="mb-4 rounded-lg bg-emerald-50 p-3 text-xs text-emerald-800 border border-emerald-200 flex items-start gap-2">
+                <div className="mb-6 rounded-lg bg-emerald-50 p-3.5 text-xs text-emerald-800 border border-emerald-200 flex items-start gap-2 animate-in fade-in">
                   <CheckCircle2 className="h-4 w-4 text-emerald-600 mt-0.5 shrink-0" />
                   <span>{successMessage}</span>
                 </div>
               )}
 
               {errorMessage && (
-                <div className="mb-4 rounded-lg bg-destructive/10 p-3 text-xs text-destructive border border-destructive/20 flex items-start gap-2">
-                  <AlertCircle className="h-4 w-4 shrink-0 mt-0.5" />
+                <div className="mb-6 rounded-lg bg-rose-50 p-3.5 text-xs text-rose-800 border border-rose-200 flex items-start gap-2">
+                  <AlertCircle className="h-4 w-4 text-rose-600 shrink-0 mt-0.5" />
                   <span>{errorMessage}</span>
                 </div>
               )}
 
               {isNewProfile && !successMessage && (
-                <div className="mb-6 rounded-lg bg-blue-50 p-3 text-xs text-blue-800 border border-blue-200">
-                  <p className="font-semibold mb-0.5">Welcome to CareerPilot AI!</p>
-                  <p>You haven't set up your profile yet. Fill in your details below to initialize your career record.</p>
+                <div className="mb-6 rounded-lg bg-blue-50/70 p-3.5 text-xs text-blue-900 border border-blue-200">
+                  <p className="font-semibold mb-0.5">Welcome! Let's set up your profile</p>
+                  <p className="text-slate-600">Enter your details below to initialize your career record in the database.</p>
                 </div>
               )}
 
-              <form onSubmit={handleSubmit} className="space-y-4">
-                <div className="space-y-1">
-                  <label className="text-xs font-semibold uppercase tracking-wider text-slate-700">
-                    Full Name
-                  </label>
-                  <input
-                    type="text"
+              {isLoading ? (
+                <div className="space-y-5">
+                  <div className="space-y-2">
+                    <Skeleton className="h-4 w-24" />
+                    <Skeleton className="h-10 w-full" />
+                  </div>
+                  <div className="space-y-2">
+                    <Skeleton className="h-4 w-32" />
+                    <Skeleton className="h-10 w-full" />
+                  </div>
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                      <Skeleton className="h-4 w-20" />
+                      <Skeleton className="h-10 w-full" />
+                    </div>
+                    <div className="space-y-2">
+                      <Skeleton className="h-4 w-24" />
+                      <Skeleton className="h-10 w-full" />
+                    </div>
+                  </div>
+                </div>
+              ) : (
+                <form onSubmit={handleSubmit} className="space-y-5">
+                  <Input
+                    label="Full Name"
                     value={fullName}
                     onChange={(e) => setFullName(e.target.value)}
-                    placeholder="e.g. Alex Rivera"
+                    placeholder="e.g. Jane Doe"
+                    error={validationErrors.fullName}
+                    helperText="Your preferred name on candidate materials"
+                    leftIcon={<UserIcon className="h-4 w-4" />}
                     maxLength={255}
-                    className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm shadow-sm transition-colors focus:border-blue-600 focus:outline-none focus:ring-1 focus:ring-blue-600"
                   />
-                </div>
 
-                <div className="space-y-1">
-                  <label className="text-xs font-semibold uppercase tracking-wider text-slate-700 flex items-center gap-1">
-                    <Briefcase className="h-3 w-3 text-slate-400" /> Professional Headline
-                  </label>
-                  <input
-                    type="text"
+                  <Input
+                    label="Professional Headline"
                     value={headline}
                     onChange={(e) => setHeadline(e.target.value)}
-                    placeholder="e.g. Senior Backend Engineer specializing in Java & Distributed Systems"
+                    placeholder="e.g. Senior Backend Engineer specializing in Distributed Systems & Java"
+                    error={validationErrors.headline}
+                    helperText="A concise summary of your current expertise"
+                    leftIcon={<Briefcase className="h-4 w-4" />}
                     maxLength={255}
-                    className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm shadow-sm transition-colors focus:border-blue-600 focus:outline-none focus:ring-1 focus:ring-blue-600"
                   />
-                </div>
 
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                  <div className="space-y-1">
-                    <label className="text-xs font-semibold uppercase tracking-wider text-slate-700 flex items-center gap-1">
-                      <MapPin className="h-3 w-3 text-slate-400" /> Location
-                    </label>
-                    <input
-                      type="text"
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
+                    <Input
+                      label="Location"
                       value={location}
                       onChange={(e) => setLocation(e.target.value)}
-                      placeholder="e.g. San Francisco, CA / Remote"
+                      placeholder="e.g. San Francisco, CA (or Remote)"
+                      error={validationErrors.location}
+                      leftIcon={<MapPin className="h-4 w-4" />}
                       maxLength={255}
-                      className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm shadow-sm transition-colors focus:border-blue-600 focus:outline-none focus:ring-1 focus:ring-blue-600"
                     />
-                  </div>
 
-                  <div className="space-y-1">
-                    <label className="text-xs font-semibold uppercase tracking-wider text-slate-700">
-                      Target Role
-                    </label>
-                    <input
-                      type="text"
+                    <Input
+                      label="Target Role"
                       value={targetRole}
                       onChange={(e) => setTargetRole(e.target.value)}
-                      placeholder="e.g. Principal Architect / Engineering Lead"
+                      placeholder="e.g. Principal Platform Architect"
+                      error={validationErrors.targetRole}
+                      helperText="The career position you are working toward"
+                      leftIcon={<Fingerprint className="h-4 w-4" />}
                       maxLength={255}
-                      className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm shadow-sm transition-colors focus:border-blue-600 focus:outline-none focus:ring-1 focus:ring-blue-600"
                     />
                   </div>
-                </div>
 
-                <div className="pt-4 flex justify-end">
-                  <Button type="submit" disabled={isSaving} className="gap-2">
-                    {isSaving ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}
-                    {isSaving ? 'Saving Profile...' : 'Save Profile'}
-                  </Button>
-                </div>
-              </form>
+                  <div className="pt-4 border-t border-slate-100 flex items-center justify-end gap-3">
+                    <Button
+                      type="submit"
+                      disabled={isSaving}
+                      className="gap-2 bg-blue-700 hover:bg-blue-800 text-white shadow-sm h-10 px-5 text-xs font-semibold"
+                    >
+                      {isSaving ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}
+                      {isSaving ? "Saving to Database..." : "Save Profile"}
+                    </Button>
+                  </div>
+                </form>
+              )}
             </CardContent>
           </Card>
         </div>
