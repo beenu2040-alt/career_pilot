@@ -33,6 +33,10 @@ public class Profile {
     public Profile() {
     }
 
+    public Profile(UUID userId) {
+        this.userId = userId;
+    }
+
     public Profile(UUID userId, String fullName, String headline, String location, String targetRole) {
         this.userId = userId;
         this.fullName = fullName;

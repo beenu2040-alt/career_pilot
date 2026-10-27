@@ -20,12 +20,13 @@ import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { EmptyState } from "@/components/ui/empty-state";
 import { useAuth } from "@/context/AuthContext";
-import { fetchUserProfile, type ProfileResponse } from "@/lib/api";
+import { fetchUserProfile, fetchSavedJobs, type ProfileResponse } from "@/lib/api";
 
 export const DashboardPage: React.FC = () => {
   const { user, accessToken } = useAuth();
   const [profile, setProfile] = useState<ProfileResponse | null>(null);
   const [isLoadingProfile, setIsLoadingProfile] = useState(true);
+  const [savedJobsCount, setSavedJobsCount] = useState<number | null>(null);
 
   useEffect(() => {
     let isMounted = true;
@@ -37,9 +38,14 @@ export const DashboardPage: React.FC = () => {
       }
 
       try {
-        const data = await fetchUserProfile(accessToken);
+        const [profileData, savedJobsData] = await Promise.all([
+          fetchUserProfile(accessToken).catch(() => null),
+          fetchSavedJobs(accessToken, 0, 1).catch(() => null),
+        ]);
+
         if (isMounted) {
-          setProfile(data);
+          if (profileData) setProfile(profileData);
+          if (savedJobsData) setSavedJobsCount(savedJobsData.totalElements);
         }
       } catch {
         // Handled gracefully: profile remains null if 404 or backend down
@@ -141,24 +147,28 @@ export const DashboardPage: React.FC = () => {
         </Card>
 
         {/* Metric 2: Saved Jobs */}
-        <Card className="hover:shadow-sm transition-shadow border-slate-200">
-          <CardHeader className="pb-2">
-            <div className="flex items-center justify-between">
-              <span className="text-xs font-semibold uppercase tracking-wider text-slate-500">
-                Saved Jobs
-              </span>
-              <div className="h-8 w-8 rounded-lg bg-indigo-50 text-indigo-700 flex items-center justify-center">
-                <Bookmark className="h-4 w-4" />
+        <Link to="/jobs?tab=saved" className="block">
+          <Card className="hover:shadow-sm hover:border-indigo-300 transition-all border-slate-200 cursor-pointer">
+            <CardHeader className="pb-2">
+              <div className="flex items-center justify-between">
+                <span className="text-xs font-semibold uppercase tracking-wider text-slate-500">
+                  Saved Jobs
+                </span>
+                <div className="h-8 w-8 rounded-lg bg-indigo-50 text-indigo-700 flex items-center justify-center">
+                  <Bookmark className="h-4 w-4" />
+                </div>
               </div>
-            </div>
-          </CardHeader>
-          <CardContent className="space-y-1">
-            <div className="text-2xl font-bold text-slate-900">0</div>
-            <p className="text-[11px] text-slate-500">
-              Job discovery engine launches in Phase 3
-            </p>
-          </CardContent>
-        </Card>
+            </CardHeader>
+            <CardContent className="space-y-1">
+              <div className="text-2xl font-bold text-slate-900">
+                {savedJobsCount !== null ? savedJobsCount : 0}
+              </div>
+              <p className="text-[11px] text-slate-500">
+                {savedJobsCount && savedJobsCount > 0 ? "Bookmarked opportunities" : "View saved vacancies"}
+              </p>
+            </CardContent>
+          </Card>
+        </Link>
 
         {/* Metric 3: Active Applications */}
         <Card className="hover:shadow-sm transition-shadow border-slate-200">

@@ -1,6 +1,16 @@
 import React, { useEffect, useState } from 'react';
 import { useAuth } from '@/context/AuthContext';
-import { fetchUserProfile, updateUserProfile, type ProfileResponse } from '@/lib/api';
+import {
+  fetchUserProfile,
+  updateUserProfile,
+  fetchUserSkills,
+  addUserSkill,
+  removeUserSkill,
+  fetchCatalogSkills,
+  type ProfileResponse,
+  type UserSkillDto,
+  type SkillDto,
+} from '@/lib/api';
 import { Button } from '@/components/ui/button';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -20,7 +30,10 @@ import {
   Briefcase,
   RefreshCw,
   Mail,
-  Fingerprint
+  Fingerprint,
+  Plus,
+  Trash2,
+  Code2,
 } from 'lucide-react';
 
 export const ProfilePage: React.FC = () => {
@@ -38,6 +51,16 @@ export const ProfilePage: React.FC = () => {
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [validationErrors, setValidationErrors] = useState<Record<string, string>>({});
   const [isNewProfile, setIsNewProfile] = useState(false);
+
+  // User Skills state
+  const [userSkills, setUserSkills] = useState<UserSkillDto[]>([]);
+  const [catalogSkills, setCatalogSkills] = useState<SkillDto[]>([]);
+  const [isAddingSkill, setIsAddingSkill] = useState(false);
+  const [newSkillName, setNewSkillName] = useState('');
+  const [newProficiency, setNewProficiency] = useState<'BEGINNER' | 'INTERMEDIATE' | 'ADVANCED' | 'EXPERT'>('INTERMEDIATE');
+  const [newYears, setNewYears] = useState('3');
+  const [skillSuccess, setSkillSuccess] = useState<string | null>(null);
+  const [skillError, setSkillError] = useState<string | null>(null);
 
   const loadProfile = async () => {
     if (!accessToken) {
@@ -68,8 +91,23 @@ export const ProfilePage: React.FC = () => {
     }
   };
 
+  const loadSkills = async () => {
+    if (!accessToken) return;
+    try {
+      const [userSkillsData, catalog] = await Promise.all([
+        fetchUserSkills(accessToken),
+        fetchCatalogSkills().catch(() => []),
+      ]);
+      setUserSkills(userSkillsData);
+      setCatalogSkills(catalog);
+    } catch (err) {
+      console.error('Failed to load user skills:', err);
+    }
+  };
+
   useEffect(() => {
     loadProfile();
+    loadSkills();
   }, [accessToken, user]);
 
   const validate = (): boolean => {
@@ -118,7 +156,6 @@ export const ProfilePage: React.FC = () => {
       setIsNewProfile(false);
       setSuccessMessage('Profile saved successfully and synchronized with Supabase PostgreSQL.');
       
-      // Auto-dismiss success notification after 5 seconds
       setTimeout(() => {
         setSuccessMessage(null);
       }, 5000);
@@ -129,6 +166,63 @@ export const ProfilePage: React.FC = () => {
     }
   };
 
+  const handleAddSkill = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!accessToken || !newSkillName.trim()) return;
+
+    setIsAddingSkill(true);
+    setSkillError(null);
+    setSkillSuccess(null);
+
+    try {
+      const added = await addUserSkill(
+        {
+          skillName: newSkillName.trim(),
+          proficiencyLevel: newProficiency,
+          yearsExperience: parseInt(newYears, 10) || 0,
+        },
+        accessToken
+      );
+
+      // Append or replace
+      setUserSkills((prev) => {
+        const filtered = prev.filter((s) => s.skillId !== added.skillId);
+        return [...filtered, added].sort((a, b) => a.skillName.localeCompare(b.skillName));
+      });
+
+      setNewSkillName('');
+      setSkillSuccess(`Added "${added.skillName}" to your profile!`);
+      setTimeout(() => setSkillSuccess(null), 4000);
+    } catch (err) {
+      setSkillError((err as Error).message || 'Failed to add skill.');
+    } finally {
+      setIsAddingSkill(false);
+    }
+  };
+
+  const handleRemoveSkill = async (skillId: string) => {
+    if (!accessToken) return;
+    try {
+      await removeUserSkill(skillId, accessToken);
+      setUserSkills((prev) => prev.filter((s) => s.skillId !== skillId));
+    } catch (err) {
+      console.error('Failed to remove skill:', err);
+    }
+  };
+
+  const getProficiencyVariant = (level: string) => {
+    switch (level) {
+      case 'EXPERT':
+        return 'success';
+      case 'ADVANCED':
+        return 'info';
+      case 'INTERMEDIATE':
+        return 'secondary';
+      default:
+        return 'outline';
+    }
+  };
+
   return (
     <div className="space-y-8">
       {/* Top Banner & Header */}
@@ -136,7 +230,7 @@ export const ProfilePage: React.FC = () => {
         <div>
           <h2 className="text-2xl font-bold tracking-tight text-slate-900">Career Profile</h2>
           <p className="text-xs text-muted-foreground mt-1">
-            Manage your personal identifiers and target position to power precision career recommendations.
+            Manage your personal identifiers and verified technical skills to power precision job matching.
           </p>
         </div>
 
@@ -144,7 +238,10 @@ export const ProfilePage: React.FC = () => {
           <Button
             variant="outline"
             size="sm"
-            onClick={loadProfile}
+            onClick={() => {
+              loadProfile();
+              loadSkills();
+            }}
             disabled={isLoading || isSaving}
             className="text-xs h-9 gap-1.5"
           >
@@ -225,8 +322,9 @@ export const ProfilePage: React.FC = () => {
           )}
         </div>
 
-        {/* Right 2 Columns: Edit Profile Form */}
-        <div className="lg:col-span-2 space-y-6">
+        {/* Right 2 Columns: Edit Profile Form + Skills Inventory */}
+        <div className="lg:col-span-2 space-y-8">
+          {/* Form Card */}
           <Card className="border-slate-200 shadow-sm">
             <CardHeader className="border-b border-slate-100 pb-4">
               <div className="flex items-center justify-between">
@@ -347,6 +445,149 @@ export const ProfilePage: React.FC = () => {
                   </div>
                 </form>
               )}
+            </CardContent>
+          </Card>
+
+          {/* Technical Skills Inventory Card */}
+          <Card className="border-slate-200 shadow-sm">
+            <CardHeader className="border-b border-slate-100 pb-4">
+              <div className="flex items-center justify-between">
+                <div>
+                  <CardTitle className="text-lg text-slate-900 flex items-center gap-2">
+                    <Code2 className="h-5 w-5 text-blue-700" />
+                    Technical Skills Inventory
+                  </CardTitle>
+                  <CardDescription>
+                    Your verified competencies. Used by the explainable matching engine to calculate deterministic match scores.
+                  </CardDescription>
+                </div>
+                <Badge variant="secondary" className="text-xs">
+                  {userSkills.length} Cataloged
+                </Badge>
+              </div>
+            </CardHeader>
+
+            <CardContent className="pt-6 space-y-6">
+              {skillSuccess && (
+                <div className="rounded-lg bg-emerald-50 p-3 text-xs text-emerald-800 border border-emerald-200 flex items-center gap-2">
+                  <CheckCircle2 className="h-4 w-4 text-emerald-600 shrink-0" />
+                  <span>{skillSuccess}</span>
+                </div>
+              )}
+
+              {skillError && (
+                <div className="rounded-lg bg-rose-50 p-3 text-xs text-rose-800 border border-rose-200 flex items-center gap-2">
+                  <AlertCircle className="h-4 w-4 text-rose-600 shrink-0" />
+                  <span>{skillError}</span>
+                </div>
+              )}
+
+              {/* Add Skill Form */}
+              <form onSubmit={handleAddSkill} className="rounded-xl border border-slate-100 bg-slate-50/70 p-4 space-y-3">
+                <span className="text-xs font-semibold text-slate-700 block">Add New Competency</span>
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                  {/* Skill Name */}
+                  <div className="space-y-1">
+                    <label className="text-[11px] font-medium text-slate-600">Skill Name</label>
+                    <input
+                      type="text"
+                      list="catalog-skills-list"
+                      placeholder="e.g. Java, React, Docker..."
+                      value={newSkillName}
+                      onChange={(e) => setNewSkillName(e.target.value)}
+                      required
+                      className="flex h-9 w-full rounded-md border border-input bg-background px-3 py-1 text-xs shadow-sm focus:outline-none focus:ring-1 focus:ring-blue-600"
+                    />
+                    <datalist id="catalog-skills-list">
+                      {catalogSkills.map((s) => (
+                        <option key={s.id} value={s.name} />
+                      ))}
+                    </datalist>
+                  </div>
+
+                  {/* Proficiency Level */}
+                  <div className="space-y-1">
+                    <label className="text-[11px] font-medium text-slate-600">Proficiency</label>
+                    <select
+                      value={newProficiency}
+                      onChange={(e) => setNewProficiency(e.target.value as any)}
+                      className="flex h-9 w-full rounded-md border border-input bg-background px-3 py-1 text-xs shadow-sm focus:outline-none focus:ring-1 focus:ring-blue-600"
+                    >
+                      <option value="BEGINNER">Beginner</option>
+                      <option value="INTERMEDIATE">Intermediate</option>
+                      <option value="ADVANCED">Advanced</option>
+                      <option value="EXPERT">Expert</option>
+                    </select>
+                  </div>
+
+                  {/* Years Experience */}
+                  <div className="space-y-1">
+                    <label className="text-[11px] font-medium text-slate-600">Years Experience</label>
+                    <input
+                      type="number"
+                      min="0"
+                      max="50"
+                      value={newYears}
+                      onChange={(e) => setNewYears(e.target.value)}
+                      className="flex h-9 w-full rounded-md border border-input bg-background px-3 py-1 text-xs shadow-sm focus:outline-none focus:ring-1 focus:ring-blue-600"
+                    />
+                  </div>
+                </div>
+
+                <div className="flex justify-end pt-1">
+                  <Button
+                    type="submit"
+                    size="sm"
+                    disabled={isAddingSkill || !newSkillName.trim()}
+                    className="text-xs h-9 bg-blue-700 hover:bg-blue-800 text-white gap-1.5 shadow-sm"
+                  >
+                    {isAddingSkill ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Plus className="h-3.5 w-3.5" />}
+                    Add Competency
+                  </Button>
+                </div>
+              </form>
+
+              {/* Skills List */}
+              <div className="space-y-3">
+                <span className="text-xs font-semibold uppercase tracking-wider text-slate-500 block">
+                  Cataloged Skills ({userSkills.length})
+                </span>
+
+                {userSkills.length > 0 ? (
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    {userSkills.map((us) => (
+                      <div
+                        key={us.skillId}
+                        className="flex items-center justify-between p-3 rounded-lg border border-slate-200 bg-white hover:border-slate-300 transition-colors"
+                      >
+                        <div className="space-y-0.5 min-w-0">
+                          <div className="flex items-center gap-2">
+                            <span className="font-semibold text-xs text-slate-900 truncate">{us.skillName}</span>
+                            <Badge variant={getProficiencyVariant(us.proficiencyLevel)} className="text-[10px] py-0">
+                              {us.proficiencyLevel}
+                            </Badge>
+                          </div>
+                          <p className="text-[11px] text-muted-foreground">
+                            {us.category || "General"} • {us.yearsExperience} yr{us.yearsExperience === 1 ? "" : "s"}
+                          </p>
+                        </div>
+
+                        <button
+                          onClick={() => handleRemoveSkill(us.skillId)}
+                          className="p-1.5 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-md transition-colors"
+                          title="Remove skill"
+                        >
+                          <Trash2 className="h-3.5 w-3.5" />
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <div className="rounded-lg border border-dashed border-slate-200 p-6 text-center text-xs text-muted-foreground">
+                    <p>No skills cataloged yet. Add your core technical competencies above to power job matching.</p>
+                  </div>
+                )}
+              </div>
             </CardContent>
           </Card>
         </div>

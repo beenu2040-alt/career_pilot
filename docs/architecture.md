@@ -183,17 +183,20 @@ Strict separation of concerns is maintained across environments:
 
 ```mermaid
 flowchart LR
-    P0["Phase 0: Project Foundation (Current)"] --> P1["Phase 1: Auth & Resume Studio"]
-    P1 --> P2["Phase 2: Career Roadmap & Skills"]
-    P2 --> P3["Phase 3: Application Tracker & AI"]
+    P0["Phase 0: Project Foundation"] --> P1["Phase 1: Auth & Profiles"]
+    P1 --> P2["Phase 2: UI/UX & Design System"]
+    P2 --> P3["Phase 3: Job Discovery & Matching (Current)"]
+    P3 --> P4["Phase 4: AI Resume & Career Roadmap"]
 
     style P0 fill:#2563eb,stroke:#1d4ed8,color:#ffffff
-    style P1 fill:#f8fafc,stroke:#cbd5e1,color:#0f172a
-    style P2 fill:#f8fafc,stroke:#cbd5e1,color:#0f172a
-    style P3 fill:#f8fafc,stroke:#cbd5e1,color:#0f172a
+    style P1 fill:#2563eb,stroke:#1d4ed8,color:#ffffff
+    style P2 fill:#2563eb,stroke:#1d4ed8,color:#ffffff
+    style P3 fill:#2563eb,stroke:#1d4ed8,color:#ffffff
+    style P4 fill:#f8fafc,stroke:#cbd5e1,color:#0f172a
 ```
 
 - **Phase 0 (Completed)**: Monorepo layout, React + Vite setup, Tailwind & shadcn UI shell, Spring Boot 3 with JPA & Security, Health endpoint, CORS policy, Supabase environment wiring, Git discipline.
-- **Phase 1 (Next)**: Supabase Auth integration (JWT authentication filter in Spring Security), user profile entities, Resume Studio data modeling, and AI parsing endpoints.
-- **Phase 2**: Career trajectory graph modeling, skill gap analysis algorithms, target job matching.
-- **Phase 3**: Kanban application tracking, interview scheduling, offer comparison tools, analytics dashboard.
+- **Phase 1 (Completed)**: Supabase Auth integration, Spring Security JWT filter, Profile & Skills schema (`V1`, `V2`), Flyway migrations, Profile API.
+- **Phase 2 (Completed)**: Reusable SaaS design system, consistent dashboard shell, responsive mobile sidebar/drawer, authentication guards, user settings.
+- **Phase 3 (Completed)**: Job catalog search & filters, explainable skill matching engine, normalized `job_skills` and `saved_jobs` (`V3`), recommendations, bookmarking, skills inventory on profile.
+- **Phase 4 (Next)**: AI resume parsing, tailored bullet generation, ATS optimization, and personalized career roadmaps.

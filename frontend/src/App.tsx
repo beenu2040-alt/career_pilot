@@ -1,7 +1,6 @@
 import React from "react";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import {
-  Search,
   FileText,
   Compass,
   Wand2,
@@ -22,6 +21,7 @@ import { ResetPasswordPage } from "@/pages/auth/ResetPasswordPage";
 
 import { DashboardPage } from "@/pages/DashboardPage";
 import { ProfilePage } from "@/pages/ProfilePage";
+import { JobsPage } from "@/pages/jobs/JobsPage";
 import { PlaceholderPage } from "@/pages/PlaceholderPage";
 import { NotFoundPage } from "@/pages/NotFoundPage";
 
@@ -52,32 +52,16 @@ export const App: React.FC = () => {
               <Route path="dashboard" element={<DashboardPage />} />
               <Route path="profile" element={<ProfilePage />} />
 
-              {/* 1. Find Jobs (Phase 3 Roadmap) */}
-              <Route
-                path="jobs"
-                element={
-                  <PlaceholderPage
-                    title="Find Jobs"
-                    phase="Phase 3 Roadmap"
-                    description="Search and discover curated job postings tailored to your verified competencies and preferred location."
-                    icon={<Search className="h-7 w-7 text-indigo-700" />}
-                    plannedFeatures={[
-                      "Semantic role matching based on PostgreSQL skill profile",
-                      "Direct filtering by employment type, location, and seniority",
-                      "Automated alignment score indicator per requisition",
-                      "One-click save to personal application pipeline",
-                    ]}
-                  />
-                }
-              />
+              {/* 1. Find Jobs (Phase 3 Full Feature) */}
+              <Route path="jobs" element={<JobsPage />} />
 
-              {/* 2. Resume Analyzer (Phase 3 Roadmap) */}
+              {/* 2. Resume Analyzer (Phase 4 Roadmap) */}
               <Route
                 path="resume-analyzer"
                 element={
                   <PlaceholderPage
                     title="Resume Analyzer"
-                    phase="Phase 3 Roadmap"
+                    phase="Phase 4 Roadmap"
                     description="Automated resume parsing, applicant tracking system (ATS) keyword matching, and section-by-section scoring."
                     icon={<FileText className="h-7 w-7 text-emerald-700" />}
                     plannedFeatures={[
@@ -90,13 +74,13 @@ export const App: React.FC = () => {
                 }
               />
 
-              {/* 3. Career Roadmap (Phase 3 Roadmap) */}
+              {/* 3. Career Roadmap (Phase 4 Roadmap) */}
               <Route
                 path="roadmap"
                 element={
                   <PlaceholderPage
                     title="Career Roadmap"
-                    phase="Phase 3 Roadmap"
+                    phase="Phase 4 Roadmap"
                     description="Interactive skill trees, competency benchmarks, and targeted learning milestones toward your aspirational career tier."
                     icon={<Compass className="h-7 w-7 text-violet-700" />}
                     plannedFeatures={[
@@ -109,13 +93,13 @@ export const App: React.FC = () => {
                 }
               />
 
-              {/* 4. Resume Tailor (Phase 3 Roadmap) */}
+              {/* 4. Resume Tailor (Phase 4 Roadmap) */}
               <Route
                 path="resume-tailor"
                 element={
                   <PlaceholderPage
                     title="Resume Tailor"
-                    phase="Phase 3 Roadmap"
+                    phase="Phase 4 Roadmap"
                     description="Targeted resume bullet customization matching specific job descriptions to maximize screening success."
                     icon={<Wand2 className="h-7 w-7 text-amber-700" />}
                     plannedFeatures={[
@@ -128,13 +112,13 @@ export const App: React.FC = () => {
                 }
               />
 
-              {/* 5. Applications (Phase 3 Roadmap) */}
+              {/* 5. Applications (Phase 4 Roadmap) */}
               <Route
                 path="applications"
                 element={
                   <PlaceholderPage
                     title="Application Tracker"
-                    phase="Phase 3 Roadmap"
+                    phase="Phase 4 Roadmap"
                     description="End-to-end pipeline management for job applications, interview schedules, recruiter contacts, and offers."
                     icon={<Send className="h-7 w-7 text-blue-700" />}
                     plannedFeatures={[

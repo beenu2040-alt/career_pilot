@@ -64,6 +64,23 @@ public class SecurityConfig {
                 // Public health probe endpoint
                 .requestMatchers("/api/health").permitAll()
 
+                // Public skills catalog
+                .requestMatchers(HttpMethod.GET, "/api/skills").permitAll()
+
+                // User-specific saved jobs & recommendations require authentication
+                .requestMatchers(HttpMethod.GET, "/api/jobs/saved").authenticated()
+                .requestMatchers(HttpMethod.GET, "/api/jobs/recommendations").authenticated()
+                .requestMatchers(HttpMethod.GET, "/api/jobs/*/match").authenticated()
+                .requestMatchers(HttpMethod.POST, "/api/jobs/*/save").authenticated()
+                .requestMatchers(HttpMethod.DELETE, "/api/jobs/*/save").authenticated()
+
+                // Public job search and job details (with optional user context if authenticated)
+                .requestMatchers(HttpMethod.GET, "/api/jobs").permitAll()
+                .requestMatchers(HttpMethod.GET, "/api/jobs/*").permitAll()
+
+                // Profile and user skills require authentication
+                .requestMatchers("/api/profile/**").authenticated()
+
                 // All other API endpoints require verified Supabase JWT authentication
                 .anyRequest().authenticated()
             );

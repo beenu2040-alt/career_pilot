@@ -29,6 +29,97 @@ export interface ProfileUpdateRequest {
   targetRole: string;
 }
 
+export interface SkillDto {
+  id: string;
+  name: string;
+  category: string | null;
+  isRequired: boolean;
+}
+
+export interface UserSkillDto {
+  skillId: string;
+  skillName: string;
+  category: string | null;
+  proficiencyLevel: 'BEGINNER' | 'INTERMEDIATE' | 'ADVANCED' | 'EXPERT';
+  yearsExperience: number;
+}
+
+export interface UserSkillCreateRequest {
+  skillName: string;
+  category?: string;
+  proficiencyLevel: 'BEGINNER' | 'INTERMEDIATE' | 'ADVANCED' | 'EXPERT';
+  yearsExperience?: number;
+}
+
+export interface JobMatchResponse {
+  jobId: string;
+  hasRequiredSkills: boolean;
+  matchPercentage: number | null;
+  matchedRequiredCount: number;
+  totalRequiredCount: number;
+  matchedRequiredSkills: string[];
+  missingRequiredSkills: string[];
+  matchedOptionalCount: number;
+  totalOptionalCount: number;
+  matchedOptionalSkills: string[];
+  explanation: string;
+}
+
+export interface JobSummaryResponse {
+  id: string;
+  title: string;
+  company: string;
+  location: string;
+  employmentType: string;
+  remoteType: string | null;
+  experienceLevel: string | null;
+  salaryMin: number | null;
+  salaryMax: number | null;
+  salaryCurrency: string;
+  postedAt: string;
+  isSample: boolean;
+  requiredSkills: SkillDto[];
+  optionalSkills: SkillDto[];
+  isSaved: boolean;
+  matchPercentage: number | null;
+}
+
+export interface JobDetailResponse extends JobSummaryResponse {
+  description: string;
+  sourceUrl: string | null;
+  createdAt: string;
+  updatedAt: string;
+  match: JobMatchResponse | null;
+}
+
+export interface PageResponse<T> {
+  content: T[];
+  pageNumber: number;
+  pageSize: number;
+  totalElements: number;
+  totalPages: number;
+  isFirst: boolean;
+  isLast: boolean;
+}
+
+export interface JobFilterParams {
+  search?: string;
+  location?: string;
+  employmentType?: string;
+  remoteType?: string;
+  experienceLevel?: string;
+  skill?: string;
+  page?: number;
+  size?: number;
+  sort?: string;
+}
+
+export interface SaveJobResponse {
+  jobId: string;
+  isSaved: boolean;
+  message: string;
+}
+
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8080/api';
 
 export async function fetchBackendHealth(): Promise<HealthResponse> {
@@ -73,7 +164,7 @@ export async function fetchUserProfile(accessToken: string): Promise<ProfileResp
   });
 
   if (response.status === 404) {
-    return null; // Profile not yet created
+    return null;
   }
 
   if (!response.ok) {
@@ -110,4 +201,244 @@ export async function updateUserProfile(
   }
 
   return response.json();
+}
+
+// ----------------------------------------------------------------------------
+// Phase 3: Job Discovery & Matching API Client
+// ----------------------------------------------------------------------------
+
+export async function fetchJobs(
+  params: JobFilterParams = {},
+  accessToken?: string | null
+): Promise<PageResponse<JobSummaryResponse>> {
+  const query = new URLSearchParams();
+  if (params.search) query.set('search', params.search);
+  if (params.location) query.set('location', params.location);
+  if (params.employmentType) query.set('employmentType', params.employmentType);
+  if (params.remoteType) query.set('remoteType', params.remoteType);
+  if (params.experienceLevel) query.set('experienceLevel', params.experienceLevel);
+  if (params.skill) query.set('skill', params.skill);
+  if (params.page !== undefined) query.set('page', params.page.toString());
+  if (params.size !== undefined) query.set('size', params.size.toString());
+  if (params.sort) query.set('sort', params.sort);
+
+  const headers: Record<string, string> = {
+    'Accept': 'application/json',
+  };
+  if (accessToken) {
+    headers['Authorization'] = `Bearer ${accessToken}`;
+  }
+
+  const response = await fetch(`${API_BASE_URL}/jobs?${query.toString()}`, {
+    method: 'GET',
+    headers,
+  });
+
+  if (!response.ok) {
+    const errorData = await response.json().catch(() => ({}));
+    throw new Error(errorData.message || `Failed to fetch jobs (HTTP ${response.status})`);
+  }
+
+  return response.json();
+}
+
+export async function fetchJobDetail(
+  id: string,
+  accessToken?: string | null
+): Promise<JobDetailResponse> {
+  const headers: Record<string, string> = {
+    'Accept': 'application/json',
+  };
+  if (accessToken) {
+    headers['Authorization'] = `Bearer ${accessToken}`;
+  }
+
+  const response = await fetch(`${API_BASE_URL}/jobs/${id}`, {
+    method: 'GET',
+    headers,
+  });
+
+  if (!response.ok) {
+    const errorData = await response.json().catch(() => ({}));
+    throw new Error(errorData.message || `Failed to fetch job detail (HTTP ${response.status})`);
+  }
+
+  return response.json();
+}
+
+export async function fetchSavedJobs(
+  accessToken: string,
+  page: number = 0,
+  size: number = 10
+): Promise<PageResponse<JobSummaryResponse>> {
+  const response = await fetch(`${API_BASE_URL}/jobs/saved?page=${page}&size=${size}`, {
+    method: 'GET',
+    headers: {
+      'Accept': 'application/json',
+      'Authorization': `Bearer ${accessToken}`,
+    },
+  });
+
+  if (!response.ok) {
+    const errorData = await response.json().catch(() => ({}));
+    throw new Error(errorData.message || `Failed to fetch saved jobs (HTTP ${response.status})`);
+  }
+
+  return response.json();
+}
+
+export async function saveJob(
+  id: string,
+  accessToken: string
+): Promise<SaveJobResponse> {
+  const response = await fetch(`${API_BASE_URL}/jobs/${id}/save`, {
+    method: 'POST',
+    headers: {
+      'Accept': 'application/json',
+      'Authorization': `Bearer ${accessToken}`,
+    },
+  });
+
+  if (!response.ok) {
+    const errorData = await response.json().catch(() => ({}));
+    throw new Error(errorData.message || `Failed to bookmark job (HTTP ${response.status})`);
+  }
+
+  return response.json();
+}
+
+export async function unsaveJob(
+  id: string,
+  accessToken: string
+): Promise<SaveJobResponse> {
+  const response = await fetch(`${API_BASE_URL}/jobs/${id}/save`, {
+    method: 'DELETE',
+    headers: {
+      'Accept': 'application/json',
+      'Authorization': `Bearer ${accessToken}`,
+    },
+  });
+
+  if (!response.ok) {
+    const errorData = await response.json().catch(() => ({}));
+    throw new Error(errorData.message || `Failed to remove bookmark (HTTP ${response.status})`);
+  }
+
+  return response.json();
+}
+
+export async function fetchJobRecommendations(
+  accessToken: string,
+  page: number = 0,
+  size: number = 10
+): Promise<PageResponse<JobSummaryResponse>> {
+  const response = await fetch(`${API_BASE_URL}/jobs/recommendations?page=${page}&size=${size}`, {
+    method: 'GET',
+    headers: {
+      'Accept': 'application/json',
+      'Authorization': `Bearer ${accessToken}`,
+    },
+  });
+
+  if (!response.ok) {
+    const errorData = await response.json().catch(() => ({}));
+    throw new Error(errorData.message || `Failed to fetch recommendations (HTTP ${response.status})`);
+  }
+
+  return response.json();
+}
+
+export async function fetchJobMatch(
+  id: string,
+  accessToken: string
+): Promise<JobMatchResponse> {
+  const response = await fetch(`${API_BASE_URL}/jobs/${id}/match`, {
+    method: 'GET',
+    headers: {
+      'Accept': 'application/json',
+      'Authorization': `Bearer ${accessToken}`,
+    },
+  });
+
+  if (!response.ok) {
+    const errorData = await response.json().catch(() => ({}));
+    throw new Error(errorData.message || `Failed to fetch match score (HTTP ${response.status})`);
+  }
+
+  return response.json();
+}
+
+// ----------------------------------------------------------------------------
+// Phase 3: Skills API Client
+// ----------------------------------------------------------------------------
+
+export async function fetchCatalogSkills(): Promise<SkillDto[]> {
+  const response = await fetch(`${API_BASE_URL}/skills`, {
+    method: 'GET',
+    headers: {
+      'Accept': 'application/json',
+    },
+  });
+
+  if (!response.ok) {
+    throw new Error(`Failed to load skills catalog (HTTP ${response.status})`);
+  }
+
+  return response.json();
+}
+
+export async function fetchUserSkills(accessToken: string): Promise<UserSkillDto[]> {
+  const response = await fetch(`${API_BASE_URL}/profile/skills`, {
+    method: 'GET',
+    headers: {
+      'Accept': 'application/json',
+      'Authorization': `Bearer ${accessToken}`,
+    },
+  });
+
+  if (!response.ok) {
+    const errorData = await response.json().catch(() => ({}));
+    throw new Error(errorData.message || `Failed to load user skills (HTTP ${response.status})`);
+  }
+
+  return response.json();
+}
+
+export async function addUserSkill(
+  data: UserSkillCreateRequest,
+  accessToken: string
+): Promise<UserSkillDto> {
+  const response = await fetch(`${API_BASE_URL}/profile/skills`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'Accept': 'application/json',
+      'Authorization': `Bearer ${accessToken}`,
+    },
+    body: JSON.stringify(data),
+  });
+
+  if (!response.ok) {
+    const errorData = await response.json().catch(() => ({}));
+    throw new Error(errorData.message || `Failed to add skill (HTTP ${response.status})`);
+  }
+
+  return response.json();
+}
+
+export async function removeUserSkill(
+  skillId: string,
+  accessToken: string
+): Promise<void> {
+  const response = await fetch(`${API_BASE_URL}/profile/skills/${skillId}`, {
+    method: 'DELETE',
+    headers: {
+      'Authorization': `Bearer ${accessToken}`,
+    },
+  });
+
+  if (!response.ok) {
+    const errorData = await response.json().catch(() => ({}));
+    throw new Error(errorData.message || `Failed to remove skill (HTTP ${response.status})`);
+  }
 }
