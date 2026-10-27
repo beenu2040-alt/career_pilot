@@ -19,6 +19,8 @@ public interface ResumeAnalysisRepository extends JpaRepository<ResumeAnalysis, 
 
     Optional<ResumeAnalysis> findFirstByResumeIdAndUserUserIdOrderByCreatedAtDesc(UUID resumeId, UUID userId);
 
+    Optional<ResumeAnalysis> findFirstByUserUserIdOrderByCreatedAtDesc(UUID userId);
+
     @Query("SELECT ra FROM ResumeAnalysis ra LEFT JOIN FETCH ra.job WHERE ra.id = :id AND ra.user.userId = :userId")
     Optional<ResumeAnalysis> findByIdAndUserUserIdWithJob(@Param("id") UUID id, @Param("userId") UUID userId);
 }

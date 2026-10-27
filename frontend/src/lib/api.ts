@@ -685,3 +685,216 @@ export async function fetchResumeAnalysisById(
 
   return response.json();
 }
+
+// ============================================================================
+// Phase 5: Career Roadmap Interfaces and Client Functions
+// ============================================================================
+
+export interface SkillGap {
+  skill: string;
+  category: string;
+  status: 'ACQUIRED' | 'GAP' | 'NEEDS_EVIDENCE';
+  priority: 'HIGH' | 'MEDIUM' | 'LOW';
+  marketDemandFrequency: number;
+  evidenceOrContext: string;
+}
+
+export interface SkillGapSummary {
+  totalTargetSkills: number;
+  acquiredSkillsCount: number;
+  gapSkillsCount: number;
+  readinessScore: number;
+  acquiredSkills: SkillGap[];
+  gapSkills: SkillGap[];
+  keyStrengths: string[];
+  priorityGaps: string[];
+}
+
+export interface MilestoneSkill {
+  name: string;
+  priority: 'HIGH' | 'MEDIUM' | 'LOW';
+  rationale: string;
+}
+
+export interface MilestoneProject {
+  title: string;
+  description: string;
+  deliverable: string;
+  techStack: string[];
+}
+
+export interface MilestoneResource {
+  title: string;
+  type: string;
+  url: string;
+}
+
+export interface RoadmapMilestone {
+  id: string;
+  roadmapId: string;
+  title: string;
+  description: string;
+  sequenceOrder: number;
+  status: 'NOT_STARTED' | 'IN_PROGRESS' | 'COMPLETED';
+  estimatedDurationWeeks: number;
+  completedAt: string | null;
+  skills: MilestoneSkill[];
+  projects: MilestoneProject[];
+  resources: MilestoneResource[];
+  completionCriteria: string[];
+  notes: string | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface RoadmapSummary {
+  id: string;
+  targetRole: string;
+  currentLevel: string;
+  overallProgress: number;
+  status: 'NOT_STARTED' | 'IN_PROGRESS' | 'COMPLETED';
+  summary: string;
+  milestonesCount: number;
+  completedMilestonesCount: number;
+  totalEstimatedWeeks: number;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface RoadmapDetail {
+  id: string;
+  userId: string;
+  targetRole: string;
+  currentLevel: string;
+  overallProgress: number;
+  status: 'NOT_STARTED' | 'IN_PROGRESS' | 'COMPLETED';
+  summary: string;
+  skillGapSummary: SkillGapSummary | null;
+  milestones: RoadmapMilestone[];
+  modelIdentifier: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface GenerateRoadmapPayload {
+  targetRole?: string;
+  currentLevel?: string;
+}
+
+export interface UpdateMilestonePayload {
+  status: 'NOT_STARTED' | 'IN_PROGRESS' | 'COMPLETED';
+  notes?: string;
+}
+
+export async function generateCareerRoadmap(
+  payload: GenerateRoadmapPayload,
+  accessToken: string
+): Promise<RoadmapDetail> {
+  const response = await fetch(`${API_BASE_URL}/roadmaps/generate`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'Accept': 'application/json',
+      'Authorization': `Bearer ${accessToken}`,
+    },
+    body: JSON.stringify(payload),
+  });
+
+  if (!response.ok) {
+    const errorData = await response.json().catch(() => ({}));
+    throw new Error(errorData.message || `Roadmap generation failed (HTTP ${response.status})`);
+  }
+
+  return response.json();
+}
+
+export async function fetchCareerRoadmaps(accessToken: string): Promise<RoadmapSummary[]> {
+  const response = await fetch(`${API_BASE_URL}/roadmaps`, {
+    headers: {
+      'Authorization': `Bearer ${accessToken}`,
+      'Accept': 'application/json',
+    },
+  });
+
+  if (!response.ok) {
+    const errorData = await response.json().catch(() => ({}));
+    throw new Error(errorData.message || `Failed to fetch roadmaps (HTTP ${response.status})`);
+  }
+
+  return response.json();
+}
+
+export async function fetchLatestCareerRoadmap(accessToken: string): Promise<RoadmapDetail | null> {
+  const response = await fetch(`${API_BASE_URL}/roadmaps/latest`, {
+    headers: {
+      'Authorization': `Bearer ${accessToken}`,
+      'Accept': 'application/json',
+    },
+  });
+
+  if (response.status === 204 || response.status === 404) {
+    return null;
+  }
+
+  if (!response.ok) {
+    const errorData = await response.json().catch(() => ({}));
+    throw new Error(errorData.message || `Failed to fetch latest roadmap (HTTP ${response.status})`);
+  }
+
+  return response.json();
+}
+
+export async function fetchCareerRoadmapById(id: string, accessToken: string): Promise<RoadmapDetail> {
+  const response = await fetch(`${API_BASE_URL}/roadmaps/${id}`, {
+    headers: {
+      'Authorization': `Bearer ${accessToken}`,
+      'Accept': 'application/json',
+    },
+  });
+
+  if (!response.ok) {
+    const errorData = await response.json().catch(() => ({}));
+    throw new Error(errorData.message || `Failed to fetch roadmap (HTTP ${response.status})`);
+  }
+
+  return response.json();
+}
+
+export async function updateMilestoneStatus(
+  roadmapId: string,
+  milestoneId: string,
+  payload: UpdateMilestonePayload,
+  accessToken: string
+): Promise<RoadmapDetail> {
+  const response = await fetch(`${API_BASE_URL}/roadmaps/${roadmapId}/milestones/${milestoneId}`, {
+    method: 'PATCH',
+    headers: {
+      'Content-Type': 'application/json',
+      'Accept': 'application/json',
+      'Authorization': `Bearer ${accessToken}`,
+    },
+    body: JSON.stringify(payload),
+  });
+
+  if (!response.ok) {
+    const errorData = await response.json().catch(() => ({}));
+    throw new Error(errorData.message || `Failed to update milestone (HTTP ${response.status})`);
+  }
+
+  return response.json();
+}
+
+export async function deleteCareerRoadmap(roadmapId: string, accessToken: string): Promise<void> {
+  const response = await fetch(`${API_BASE_URL}/roadmaps/${roadmapId}`, {
+    method: 'DELETE',
+    headers: {
+      'Authorization': `Bearer ${accessToken}`,
+    },
+  });
+
+  if (!response.ok && response.status !== 204) {
+    const errorData = await response.json().catch(() => ({}));
+    throw new Error(errorData.message || `Failed to delete roadmap (HTTP ${response.status})`);
+  }
+}
+

@@ -2,7 +2,7 @@
 
 CareerPilot AI is a production-minded career development SaaS application designed to help professionals navigate career transitions, optimize resumes for ATS standards, build customized skill development roadmaps, and track job application pipelines.
 
-This repository contains the completed **Phase 0 (Project Foundation)**, **Phase 1 (Database & Authentication)**, **Phase 2 (Professional UI/UX & Dashboard)**, **Phase 3 (Job Discovery & Explainable Matching)**, and **Phase 4 (AI Resume Analyzer)** implementations.
+This repository contains the completed **Phase 0 (Project Foundation)**, **Phase 1 (Database & Authentication)**, **Phase 2 (Professional UI/UX & Dashboard)**, **Phase 3 (Job Discovery & Explainable Matching)**, **Phase 4 (AI Resume Analyzer)**, and **Phase 5 (Personalized Career Roadmap)** implementations.
 
 ---
 

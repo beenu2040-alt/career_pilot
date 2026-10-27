@@ -1,7 +1,6 @@
 import React from "react";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import {
-  Compass,
   Wand2,
   Send,
   Settings,
@@ -22,6 +21,7 @@ import { DashboardPage } from "@/pages/DashboardPage";
 import { ProfilePage } from "@/pages/ProfilePage";
 import { JobsPage } from "@/pages/jobs/JobsPage";
 import { ResumePage } from "@/pages/resume/ResumePage";
+import { RoadmapPage } from "@/pages/roadmap/RoadmapPage";
 import { PlaceholderPage } from "@/pages/PlaceholderPage";
 import { NotFoundPage } from "@/pages/NotFoundPage";
 
@@ -59,24 +59,8 @@ export const App: React.FC = () => {
               <Route path="resume-analyzer" element={<ResumePage />} />
               <Route path="resume" element={<Navigate to="/resume-analyzer" replace />} />
 
-              {/* 3. Career Roadmap (Phase 4 Roadmap) */}
-              <Route
-                path="roadmap"
-                element={
-                  <PlaceholderPage
-                    title="Career Roadmap"
-                    phase="Phase 4 Roadmap"
-                    description="Interactive skill trees, competency benchmarks, and targeted learning milestones toward your aspirational career tier."
-                    icon={<Compass className="h-7 w-7 text-violet-700" />}
-                    plannedFeatures={[
-                      "Skill gap comparison against market requisitions",
-                      "Milestone-driven learning path recommendation",
-                      "Quarterly progress tracking and goal setting",
-                      "Seniority-tier benchmark metrics",
-                    ]}
-                  />
-                }
-              />
+              {/* 3. Career Roadmap (Phase 5 Full Feature) */}
+              <Route path="roadmap" element={<RoadmapPage />} />
 
               {/* 4. Resume Tailor (Phase 4 Roadmap) */}
               <Route

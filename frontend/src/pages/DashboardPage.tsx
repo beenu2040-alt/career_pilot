@@ -12,7 +12,6 @@ import {
   Compass,
   Clock,
   Layers,
-  ArrowUpRight,
 } from "lucide-react";
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -278,17 +277,17 @@ export const DashboardPage: React.FC = () => {
                 <div className="flex-1 space-y-1">
                   <div className="flex items-center justify-between">
                     <h4 className="text-sm font-semibold text-slate-900 flex items-center gap-2">
-                      Map verified skills catalog
-                      <Badge variant="secondary" className="text-[10px]">Phase 3</Badge>
+                      Personalized career roadmap & skill gaps
+                      <Badge variant="info" className="text-[10px]">Active</Badge>
                     </h4>
                     <Link to="/roadmap">
-                      <Button variant="ghost" size="sm" className="h-7 text-xs text-slate-500 gap-1">
-                        Preview <ArrowUpRight className="h-3 w-3" />
+                      <Button variant="ghost" size="sm" className="h-7 text-xs text-indigo-700 gap-1">
+                        View Plan <ArrowRight className="h-3 w-3" />
                       </Button>
                     </Link>
                   </div>
                   <p className="text-xs text-muted-foreground">
-                    Catalog technical and leadership competencies to power skill gap analysis.
+                    Benchmark competencies against market vacancies, track milestones, and bridge skill gaps.
                   </p>
                 </div>
               </div>
@@ -296,7 +295,7 @@ export const DashboardPage: React.FC = () => {
               {/* Item 3: Upload Resume */}
               <div className="flex items-start gap-4 p-5 hover:bg-slate-50/60 transition-colors">
                 <div className="mt-0.5">
-                  <div className="flex h-6 w-6 items-center justify-center rounded-full border-2 border-dashed border-slate-300 text-slate-400 text-xs">
+                  <div className="flex h-6 w-6 items-center justify-center rounded-full border-2 border-dashed border-indigo-300 text-indigo-600 text-xs font-semibold">
                     3
                   </div>
                 </div>
@@ -304,11 +303,11 @@ export const DashboardPage: React.FC = () => {
                   <div className="flex items-center justify-between">
                     <h4 className="text-sm font-semibold text-slate-900 flex items-center gap-2">
                       Upload resume for ATS evaluation
-                      <Badge variant="secondary" className="text-[10px]">Phase 3</Badge>
+                      <Badge variant="info" className="text-[10px]">Active</Badge>
                     </h4>
                     <Link to="/resume-analyzer">
-                      <Button variant="ghost" size="sm" className="h-7 text-xs text-slate-500 gap-1">
-                        Preview <ArrowUpRight className="h-3 w-3" />
+                      <Button variant="ghost" size="sm" className="h-7 text-xs text-indigo-700 gap-1">
+                        Analyze <ArrowRight className="h-3 w-3" />
                       </Button>
                     </Link>
                   </div>
@@ -321,7 +320,7 @@ export const DashboardPage: React.FC = () => {
               {/* Item 4: Explore Opportunities */}
               <div className="flex items-start gap-4 p-5 hover:bg-slate-50/60 transition-colors">
                 <div className="mt-0.5">
-                  <div className="flex h-6 w-6 items-center justify-center rounded-full border-2 border-dashed border-slate-300 text-slate-400 text-xs">
+                  <div className="flex h-6 w-6 items-center justify-center rounded-full border-2 border-dashed border-indigo-300 text-indigo-600 text-xs font-semibold">
                     4
                   </div>
                 </div>
@@ -329,11 +328,11 @@ export const DashboardPage: React.FC = () => {
                   <div className="flex items-center justify-between">
                     <h4 className="text-sm font-semibold text-slate-900 flex items-center gap-2">
                       Explore matching job opportunities
-                      <Badge variant="secondary" className="text-[10px]">Phase 3</Badge>
+                      <Badge variant="info" className="text-[10px]">Active</Badge>
                     </h4>
                     <Link to="/jobs">
-                      <Button variant="ghost" size="sm" className="h-7 text-xs text-slate-500 gap-1">
-                        Preview <ArrowUpRight className="h-3 w-3" />
+                      <Button variant="ghost" size="sm" className="h-7 text-xs text-indigo-700 gap-1">
+                        Find Jobs <ArrowRight className="h-3 w-3" />
                       </Button>
                     </Link>
                   </div>
