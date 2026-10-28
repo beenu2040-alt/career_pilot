@@ -37,8 +37,8 @@ const navItems: NavItem[] = [
   { name: "Find Jobs", path: "/jobs", icon: Search },
   { name: "Resume Analyzer", path: "/resume-analyzer", icon: FileText },
   { name: "Career Roadmap", path: "/roadmap", icon: Compass },
-  { name: "Resume Tailor", path: "/resume-tailor", icon: Wand2, badge: "Roadmap", badgeVariant: "secondary" },
-  { name: "Applications", path: "/applications", icon: Send, badge: "Roadmap", badgeVariant: "secondary" },
+  { name: "Resume Tailor", path: "/resume-tailor", icon: Wand2, badge: "AI", badgeVariant: "info" },
+  { name: "Applications", path: "/applications", icon: Send, badge: "Live", badgeVariant: "success" },
   { name: "My Profile", path: "/profile", icon: UserIcon },
   { name: "Settings", path: "/settings", icon: Settings, badge: "Preview", badgeVariant: "outline" },
 ];

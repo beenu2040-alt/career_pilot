@@ -10,6 +10,7 @@ import {
   Search,
   FileText,
   Compass,
+  Wand2,
   Clock,
   Layers,
 } from "lucide-react";
@@ -428,6 +429,18 @@ export const DashboardPage: React.FC = () => {
                 <Button variant="outline" className="w-full justify-start gap-2.5 text-xs h-10 border-slate-200 hover:bg-slate-50">
                   <Compass className="h-4 w-4 text-violet-700" />
                   <span>Career Roadmap & Gaps</span>
+                </Button>
+              </Link>
+              <Link to="/resume-tailor" className="block">
+                <Button variant="outline" className="w-full justify-start gap-2.5 text-xs h-10 border-slate-200 hover:bg-slate-50">
+                  <Wand2 className="h-4 w-4 text-amber-600" />
+                  <span>AI Resume Tailoring</span>
+                </Button>
+              </Link>
+              <Link to="/applications" className="block">
+                <Button variant="outline" className="w-full justify-start gap-2.5 text-xs h-10 border-slate-200 hover:bg-slate-50">
+                  <Send className="h-4 w-4 text-blue-600" />
+                  <span>Application Tracker & Pipeline</span>
                 </Button>
               </Link>
             </CardContent>

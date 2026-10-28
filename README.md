@@ -2,14 +2,16 @@
 
 CareerPilot AI is a production-minded career development SaaS application designed to help professionals navigate career transitions, optimize resumes for ATS standards, build customized skill development roadmaps, and track job application pipelines.
 
-This repository contains the completed **Phase 0 (Project Foundation)**, **Phase 1 (Database & Authentication)**, **Phase 2 (Professional UI/UX & Dashboard)**, **Phase 3 (Job Discovery & Explainable Matching)**, **Phase 4 (AI Resume Analyzer)**, and **Phase 5 (Personalized Career Roadmap)** implementations.
+This repository contains the completed **Phase 0 (Project Foundation)**, **Phase 1 (Database & Authentication)**, **Phase 2 (Professional UI/UX & Dashboard)**, **Phase 3 (Job Discovery & Explainable Matching)**, **Phase 4 (AI Resume Analyzer)**, **Phase 5 (Personalized Career Roadmap)**, **Phase 6 (AI Resume Tailoring)**, and **Phase 7 (Application Tracker & Career Analytics)** implementations.
 
 ---
 
 ## 1. Technology Stack
 
-- **Frontend**: React 18, TypeScript, Vite, Tailwind CSS, shadcn/ui components, React Router, `@supabase/supabase-js`
+- **Frontend**: React 18, TypeScript, Vite, Tailwind CSS, shadcn/ui components, React Router, Recharts, `@supabase/supabase-js`
 - **Backend**: Java 21 (LTS), Spring Boot 3.3.5 (Spring Web, Spring Validation, Spring Security OAuth2 Resource Server, Spring Data JPA, Flyway, PostgreSQL driver)
+- **PDF Generation & Extraction**: Apache PDFBox 3.0.3 (deterministic ATS resume parsing & multi-page PDF generation)
+- **AI Integrations**: Gemini API / OpenAI API with deterministic rubric & curriculum fallback engines
 - **Database**: Supabase PostgreSQL with version-controlled Flyway migrations & Row Level Security (RLS)
 - **Authentication**: Supabase Auth (Email & Password registration, login, session persistence, and password recovery)
 - **Backend Security**: Spring Security stateless filter chain with Supabase JWT signature and claims validation
@@ -20,20 +22,24 @@ This repository contains the completed **Phase 0 (Project Foundation)**, **Phase
 ## 2. Monorepo Structure
 
 ```
-collage_project/
+career_pilot/
 ├── frontend/                     # React 18 + TypeScript + Vite SPA
 │   ├── src/
 │   │   ├── components/
 │   │   │   ├── auth/             # ProtectedRoute, PublicOnlyRoute
-│   │   │   ├── layout/           # Header, Footer, AppLayout
-│   │   │   └── ui/               # Button, Card, Badge (shadcn/ui primitives)
+│   │   │   ├── jobs/             # JobDetailModal (with 1-click pipeline tracking)
+│   │   │   ├── layout/           # Header, Footer, DashboardLayout
+│   │   │   └── ui/               # Button, Card, Badge, Dialog (shadcn/ui)
 │   │   ├── context/              # AuthContext (Supabase Auth state & actions)
 │   │   ├── lib/                  # supabase client, api client, utils
 │   │   ├── pages/
+│   │   │   ├── applications/     # ApplicationsPage (Phase 7 Kanban, List & Analytics)
 │   │   │   ├── auth/             # LoginPage, RegisterPage, ForgotPassword, ResetPassword
-│   │   │   ├── HomePage.tsx      # Landing & diagnostic overview
-│   │   │   ├── ProfilePage.tsx   # User profile management (GET/PUT /api/profile)
-│   │   │   ├── PlaceholderPage.tsx # Phase 2 & 3 milestones
+│   │   │   ├── jobs/             # JobsPage (Phase 3)
+│   │   │   ├── resume/           # ResumePage (Phase 4), ResumeTailorPage (Phase 6)
+│   │   │   ├── roadmap/          # RoadmapPage (Phase 5)
+│   │   │   ├── DashboardPage.tsx # Overview dashboard
+│   │   │   ├── ProfilePage.tsx   # User profile management
 │   │   │   └── NotFoundPage.tsx  # 404 page
 │   │   ├── App.tsx               # Route hierarchy
 │   │   └── main.tsx              # React DOM entrypoint
@@ -45,98 +51,67 @@ collage_project/
 │   │   ├── main/
 │   │   │   ├── java/com/careerpilot/
 │   │   │   │   ├── config/       # SecurityConfig, CorsConfig, JwtDecoderConfig
-│   │   │   │   ├── controller/   # HealthController, UserController, ProfileController
-│   │   │   │   ├── dto/          # HealthResponse, UserMeResponse, ProfileResponse/Request
-│   │   │   │   ├── entity/       # Profile, Skill, UserSkill, Job, Application
+│   │   │   │   ├── controller/   # ApplicationController, CareerAnalyticsController, etc.
+│   │   │   │   ├── dto/          # ApplicationDto, RemindersSummaryDto, CareerAnalyticsDto
+│   │   │   │   ├── entity/       # Application, ApplicationHistory, ApplicationStatus
 │   │   │   │   ├── exception/    # GlobalExceptionHandler, ResourceNotFoundException
-│   │   │   │   ├── repository/   # ProfileRepository, SkillRepository, etc.
+│   │   │   │   ├── repository/   # ApplicationRepository, ApplicationHistoryRepository
 │   │   │   │   ├── security/     # RestAuthenticationEntryPoint, SecurityUtils
-│   │   │   │   ├── service/      # ProfileService
+│   │   │   │   ├── service/      # ApplicationService, CareerAnalyticsService, etc.
 │   │   │   │   └── CareerPilotApplication.java
 │   │   │   └── resources/
 │   │   │       ├── db/
-│   │   │       │   ├── migration/ # V1__init_careerpilot_schema.sql, V2__enable_rls_policies.sql
-│   │   │       │   └── seed/      # dev_seed.sql (sample skills and jobs)
-│   │   │       └── application.yml # Datasource, Hikari, JWT, and CORS setup
-│   │   └── test/
-│   │       ├── java/com/careerpilot/ # HealthControllerTest, UserControllerTest, ProfileControllerTest, etc.
-│   │       └── resources/
-│   │           └── application-test.yml # Isolated in-memory H2 configuration
-│   ├── .env.example              # Backend environment template
+│   │   │       │   ├── migration/ # V1 through V7 Flyway migrations
+│   │   │       │   └── seed/      # dev_seed.sql
+│   │   │       └── application.yml
+│   │   └── test/                 # 113 unit and integration tests (JUnit 5 + MockMvc)
+│   ├── .env.example
 │   └── pom.xml
 │
 ├── docs/                         # Project Documentation
-│   ├── architecture.md           # High-level architecture & design
-│   └── phase-1-authentication.md # Comprehensive Supabase Auth & JWT setup guide
-│
-├── .gitignore                    # Secrets, node_modules, target/ exclusions
+│   ├── architecture.md
+│   ├── phase-1-authentication.md
+│   ├── phase-2-ui-ux.md
+│   ├── phase-3-job-discovery.md
+│   ├── phase-4-resume-analyzer.md
+│   ├── phase-5-career-roadmap.md
+│   ├── phase-6-ai-resume-tailoring.md
+│   └── phase-7-application-tracking-and-analytics.md
 └── README.md
 ```
 
 ---
 
-## 3. Environment Configuration
-
-### 3.1 Frontend (`frontend/.env`)
-Copy `frontend/.env.example` to `frontend/.env`:
-```bash
-cp frontend/.env.example frontend/.env
-```
-Fill in your Supabase project keys (Project Settings &gt; API):
-```bash
-VITE_API_BASE_URL=http://localhost:8080/api
-VITE_SUPABASE_URL=https://<your-project-ref>.supabase.co
-VITE_SUPABASE_ANON_KEY=<your-supabase-public-anon-key>
-```
-
-### 3.2 Backend (`backend/.env`)
-Copy `backend/.env.example` to `backend/.env`:
-```bash
-cp backend/.env.example backend/.env
-```
-Configure your Supabase connection and JWT secret:
-```bash
-SERVER_PORT=8080
-SPRING_PROFILES_ACTIVE=dev
-
-# Supabase PostgreSQL JDBC connection string
-SUPABASE_DB_URL=jdbc:postgresql://<db.your-project-ref.supabase.co>:5432/postgres?sslmode=require
-SUPABASE_DB_USERNAME=postgres
-SUPABASE_DB_PASSWORD=<your-database-password>
-
-# Enable Flyway migrations
-FLYWAY_ENABLED=true
-
-# Supabase JWT Secret (Project Settings > API > JWT Settings > JWT Secret)
-SUPABASE_JWT_SECRET=<your-supabase-jwt-secret-minimum-32-chars>
-```
-
----
-
-## 4. Database Migrations
+## 3. Database Migrations
 
 Database tables and Row Level Security (RLS) policies are version-controlled with Flyway:
-- `V1__init_careerpilot_schema.sql`: Creates `profiles`, `skills`, `user_skills`, `jobs`, and `applications` tables with constraints, indexes, and cascades.
-- `V2__enable_rls_policies.sql`: Enables RLS across all tables for direct Supabase client access.
-- `dev_seed.sql`: Isolated seed script containing tech skills and sample job postings for development.
-
-When connected to Supabase PostgreSQL, migrations execute automatically upon starting the backend with `FLYWAY_ENABLED=true`.
+- `V1__init_careerpilot_schema.sql`: Initial schema (profiles, skills, user_skills, jobs, applications).
+- `V2__enable_rls_policies.sql`: Enables RLS across base tables.
+- `V3__phase3_jobs_and_saved_jobs.sql`: Job discovery and saved jobs schema.
+- `V4__phase4_resumes_and_analyses.sql`: Resumes and resume analyses schema.
+- `V5__phase5_career_roadmaps.sql`: Career roadmaps and milestones schema.
+- `V6__phase6_resume_tailoring.sql`: Resume tailoring sessions, structured suggestions, and versioned resumes.
+- `V7__phase7_application_tracking_and_history.sql`: Extended application tracking, manual requisitions, and audit history.
 
 ---
 
-## 5. API Endpoints
+## 4. REST API Endpoints (Phase 7 Highlights)
 
 | Method | Endpoint | Access | Description |
 | :--- | :--- | :--- | :--- |
-| `GET` | `/api/health` | Public | Service health & version diagnostic |
-| `OPTIONS` | `/**` | Public | CORS preflight negotiation |
-| `GET` | `/api/me` | Authenticated | Current user identity, email, and roles from JWT |
-| `GET` | `/api/profile` | Authenticated | Retrieve authenticated user's profile |
-| `PUT` | `/api/profile` | Authenticated | Create or update authenticated user's profile |
+| `GET` | `/api/applications` | Authenticated | Paginated search, filter, and sorted applications |
+| `GET` | `/api/applications/all` | Authenticated | Unpaginated application pipeline for Kanban view |
+| `POST` | `/api/applications` | Authenticated | Create an application (catalog job or manual entry) |
+| `GET` | `/api/applications/{id}` | Authenticated | Retrieve application details and full audit history |
+| `PUT` | `/api/applications/{id}` | Authenticated | Update application details, contacts, and reminders |
+| `PATCH` | `/api/applications/{id}/status` | Authenticated | Update application status and record audit log |
+| `DELETE` | `/api/applications/{id}` | Authenticated | Delete application and its historical transitions |
+| `GET` | `/api/applications/reminders` | Authenticated | Retrieve due follow-ups, upcoming interviews & stale items |
+| `GET` | `/api/analytics/applications` | Authenticated | Server-side computed career analytics & timeline aggregates |
 
 ---
 
-## 6. How to Run Locally
+## 5. How to Run Locally
 
 ### Terminal 1: Backend
 ```bash
@@ -153,14 +128,16 @@ Open [http://localhost:5173](http://localhost:5173) in your browser.
 
 ---
 
-## 7. Verification & Tests
+## 6. Verification & Tests
 
 ```bash
-# 1. Run frontend build & type check
-cd frontend && npm run build
+# 1. Run frontend build & type check (0 errors)
+cd frontend
+npm run build
 
-# 2. Run backend test suite (18 unit & integration tests)
-cd ../backend && mvn test
+# 2. Run backend test suite (113 passing unit & integration tests)
+cd ../backend
+mvn test
 ```
 
-For full setup details and architecture decisions, see [docs/phase-1-authentication.md](file:///home/captain/collage_project/docs/phase-1-authentication.md).
+For complete technical specifications, see [docs/phase-7-application-tracking-and-analytics.md](file:///c:/osman/career_pilot/docs/phase-7-application-tracking-and-analytics.md).

@@ -898,3 +898,606 @@ export async function deleteCareerRoadmap(roadmapId: string, accessToken: string
   }
 }
 
+
+
+// ============================================================================
+// Phase 6: AI Resume Tailoring Interfaces & Client Functions
+// ============================================================================
+
+export type TailoringSessionStatus = 'CREATED' | 'GENERATING' | 'SUGGESTIONS_READY' | 'COMPLETED' | 'FAILED';
+export type SuggestionSection = 'SUMMARY' | 'SKILLS' | 'EXPERIENCE' | 'PROJECTS' | 'FORMATTING';
+export type SuggestionStatus = 'PENDING' | 'ACCEPTED' | 'REJECTED' | 'EDITED';
+
+export interface KeywordCoverage {
+  matchedKeywords: string[];
+  missingKeywords: string[];
+  addedKeywords: string[];
+  missingQualifications: string[];
+  matchScoreBefore: number;
+  matchScoreAfter: number;
+  explanation: string;
+}
+
+export interface TailoringSuggestion {
+  id: string;
+  sessionId: string;
+  section: SuggestionSection;
+  title: string;
+  originalContent: string | null;
+  suggestedContent: string;
+  userEditedContent: string | null;
+  explanation: string;
+  status: SuggestionStatus;
+  requiresUserConfirmation: boolean;
+  confirmationPrompt: string | null;
+  sequenceOrder: number;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface TailoredExperience {
+  roleTitle: string;
+  company: string;
+  duration: string;
+  bullets: string[];
+}
+
+export interface TailoredProject {
+  title: string;
+  description: string;
+  techStack: string[];
+  bullets: string[];
+}
+
+export interface TailoredResumeContent {
+  candidateName: string;
+  email: string;
+  phone: string;
+  location: string;
+  professionalSummary: string;
+  skills: string[];
+  experience: TailoredExperience[];
+  projects: TailoredProject[];
+  education: string[];
+  formattingNotes: string[];
+}
+
+export interface TailoredResumeVersion {
+  id: string;
+  sessionId: string;
+  versionNumber: number;
+  versionName: string;
+  tailoredContent: TailoredResumeContent | null;
+  tailoredPlainText: string;
+  changeSummary: string | null;
+  appliedSuggestionsCount: number;
+  keywordCoverage: KeywordCoverage | null;
+  createdAt: string;
+}
+
+export interface TailoringSession {
+  id: string;
+  resumeId: string;
+  resumeFilename: string;
+  jobId: string | null;
+  jobTitle: string;
+  companyName: string | null;
+  status: TailoringSessionStatus;
+  targetRole: string | null;
+  modelIdentifier: string | null;
+  matchScoreBefore: number | null;
+  matchScoreAfter: number | null;
+  versionCount: number;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface TailoringSessionDetail {
+  id: string;
+  resumeId: string;
+  resumeFilename: string;
+  jobId: string | null;
+  jobTitle: string;
+  companyName: string | null;
+  jobDescriptionSnapshot: string;
+  status: TailoringSessionStatus;
+  targetRole: string | null;
+  modelIdentifier: string | null;
+  matchScoreBefore: number | null;
+  matchScoreAfter: number | null;
+  keywordCoverage: KeywordCoverage | null;
+  suggestions: TailoringSuggestion[];
+  versions: TailoredResumeVersion[];
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface CreateTailoringSessionPayload {
+  resumeId: string;
+  jobId?: string;
+  customJobTitle?: string;
+  customCompanyName?: string;
+  customJobDescription?: string;
+}
+
+export interface UpdateSuggestionPayload {
+  status: SuggestionStatus;
+  userEditedContent?: string;
+}
+
+export interface SaveTailoredVersionPayload {
+  versionName?: string;
+  changeSummary?: string;
+  customContent?: TailoredResumeContent;
+}
+
+export async function createTailoringSession(
+  payload: CreateTailoringSessionPayload,
+  accessToken: string
+): Promise<TailoringSession> {
+  const response = await fetch(`${API_BASE_URL}/resume-tailoring`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'Accept': 'application/json',
+      'Authorization': `Bearer ${accessToken}`,
+    },
+    body: JSON.stringify(payload),
+  });
+
+  if (!response.ok) {
+    const errorData = await response.json().catch(() => ({}));
+    throw new Error(errorData.message || `Failed to create tailoring session (HTTP ${response.status})`);
+  }
+
+  return response.json();
+}
+
+export async function fetchTailoringSessions(accessToken: string): Promise<TailoringSession[]> {
+  const response = await fetch(`${API_BASE_URL}/resume-tailoring`, {
+    headers: {
+      'Authorization': `Bearer ${accessToken}`,
+      'Accept': 'application/json',
+    },
+  });
+
+  if (!response.ok) {
+    const errorData = await response.json().catch(() => ({}));
+    throw new Error(errorData.message || `Failed to fetch tailoring sessions (HTTP ${response.status})`);
+  }
+
+  return response.json();
+}
+
+export async function fetchTailoringSessionById(
+  id: string,
+  accessToken: string
+): Promise<TailoringSessionDetail> {
+  const response = await fetch(`${API_BASE_URL}/resume-tailoring/${id}`, {
+    headers: {
+      'Authorization': `Bearer ${accessToken}`,
+      'Accept': 'application/json',
+    },
+  });
+
+  if (!response.ok) {
+    const errorData = await response.json().catch(() => ({}));
+    throw new Error(errorData.message || `Failed to load tailoring session (HTTP ${response.status})`);
+  }
+
+  return response.json();
+}
+
+export async function generateTailoringSuggestions(
+  sessionId: string,
+  accessToken: string
+): Promise<TailoringSessionDetail> {
+  const response = await fetch(`${API_BASE_URL}/resume-tailoring/${sessionId}/generate`, {
+    method: 'POST',
+    headers: {
+      'Authorization': `Bearer ${accessToken}`,
+      'Accept': 'application/json',
+    },
+  });
+
+  if (!response.ok) {
+    const errorData = await response.json().catch(() => ({}));
+    throw new Error(errorData.message || `Tailoring generation failed (HTTP ${response.status})`);
+  }
+
+  return response.json();
+}
+
+export async function updateTailoringSuggestion(
+  sessionId: string,
+  suggestionId: string,
+  payload: UpdateSuggestionPayload,
+  accessToken: string
+): Promise<TailoringSuggestion> {
+  const response = await fetch(`${API_BASE_URL}/resume-tailoring/${sessionId}/suggestions/${suggestionId}`, {
+    method: 'PATCH',
+    headers: {
+      'Content-Type': 'application/json',
+      'Accept': 'application/json',
+      'Authorization': `Bearer ${accessToken}`,
+    },
+    body: JSON.stringify(payload),
+  });
+
+  if (!response.ok) {
+    const errorData = await response.json().catch(() => ({}));
+    throw new Error(errorData.message || `Failed to update suggestion (HTTP ${response.status})`);
+  }
+
+  return response.json();
+}
+
+export async function saveTailoredVersion(
+  sessionId: string,
+  payload: SaveTailoredVersionPayload,
+  accessToken: string
+): Promise<TailoredResumeVersion> {
+  const response = await fetch(`${API_BASE_URL}/resume-tailoring/${sessionId}/versions`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'Accept': 'application/json',
+      'Authorization': `Bearer ${accessToken}`,
+    },
+    body: JSON.stringify(payload),
+  });
+
+  if (!response.ok) {
+    const errorData = await response.json().catch(() => ({}));
+    throw new Error(errorData.message || `Failed to save tailored version (HTTP ${response.status})`);
+  }
+
+  return response.json();
+}
+
+export async function fetchTailoredVersionById(
+  sessionId: string,
+  versionId: string,
+  accessToken: string
+): Promise<TailoredResumeVersion> {
+  const response = await fetch(`${API_BASE_URL}/resume-tailoring/${sessionId}/versions/${versionId}`, {
+    headers: {
+      'Authorization': `Bearer ${accessToken}`,
+      'Accept': 'application/json',
+    },
+  });
+
+  if (!response.ok) {
+    const errorData = await response.json().catch(() => ({}));
+    throw new Error(errorData.message || `Failed to load version (HTTP ${response.status})`);
+  }
+
+  return response.json();
+}
+
+export async function exportTailoredResumePdf(
+  sessionId: string,
+  versionId: string,
+  accessToken: string
+): Promise<Blob> {
+  const response = await fetch(`${API_BASE_URL}/resume-tailoring/${sessionId}/versions/${versionId}/export`, {
+    headers: {
+      'Authorization': `Bearer ${accessToken}`,
+    },
+  });
+
+  if (!response.ok) {
+    throw new Error(`Failed to export PDF resume (HTTP ${response.status})`);
+  }
+
+  return response.blob();
+}
+
+export async function deleteTailoringSession(
+  sessionId: string,
+  accessToken: string
+): Promise<void> {
+  const response = await fetch(`${API_BASE_URL}/resume-tailoring/${sessionId}`, {
+    method: 'DELETE',
+    headers: {
+      'Authorization': `Bearer ${accessToken}`,
+    },
+  });
+
+  if (!response.ok && response.status !== 204) {
+    const errorData = await response.json().catch(() => ({}));
+    throw new Error(errorData.message || `Failed to delete tailoring session (HTTP ${response.status})`);
+  }
+}
+
+
+// ============================================================================
+// Phase 7: Application Tracking & Career Analytics Interfaces & Client Functions
+// ============================================================================
+
+export type ApplicationStatus =
+  | 'WISHLIST'
+  | 'APPLIED'
+  | 'SCREENING'
+  | 'INTERVIEW'
+  | 'ASSESSMENT'
+  | 'OFFER'
+  | 'REJECTED'
+  | 'WITHDRAWN';
+
+export interface ApplicationHistoryDto {
+  id: string;
+  applicationId: string;
+  previousStatus: string | null;
+  newStatus: string;
+  notes: string | null;
+  createdAt: string;
+}
+
+export interface ApplicationDto {
+  id: string;
+  jobId: string | null;
+  companyName: string;
+  jobTitle: string;
+  jobDescription: string | null;
+  jobUrl: string | null;
+  contactName: string | null;
+  contactEmail: string | null;
+  salaryOffered: number | null;
+  status: ApplicationStatus;
+  appliedAt: string | null;
+  nextFollowUpDate: string | null;
+  interviewAt: string | null;
+  notes: string | null;
+  history: ApplicationHistoryDto[];
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface CreateApplicationPayload {
+  jobId?: string;
+  companyName?: string;
+  jobTitle?: string;
+  jobDescription?: string;
+  jobUrl?: string;
+  contactName?: string;
+  contactEmail?: string;
+  salaryOffered?: number;
+  status?: ApplicationStatus;
+  appliedAt?: string;
+  nextFollowUpDate?: string;
+  interviewAt?: string;
+  notes?: string;
+}
+
+export interface UpdateApplicationPayload {
+  companyName: string;
+  jobTitle: string;
+  jobDescription?: string;
+  jobUrl?: string;
+  contactName?: string;
+  contactEmail?: string;
+  salaryOffered?: number;
+  status?: ApplicationStatus;
+  appliedAt?: string;
+  nextFollowUpDate?: string;
+  interviewAt?: string;
+  notes?: string;
+}
+
+export interface UpdateApplicationStatusPayload {
+  status: ApplicationStatus;
+  notes?: string;
+}
+
+export interface RemindersSummary {
+  overdue: ApplicationDto[];
+  dueToday: ApplicationDto[];
+  upcomingInterviews: ApplicationDto[];
+  stale: ApplicationDto[];
+}
+
+export interface TimelineDataPoint {
+  dateLabel: string;
+  count: number;
+}
+
+export interface CareerAnalytics {
+  totalApplications: number;
+  submittedApplications: number;
+  wishlistCount: number;
+  activePipelineCount: number;
+  interviewCount: number;
+  interviewRate: number;
+  offerCount: number;
+  offerRate: number;
+  statusDistribution: Record<string, number>;
+  timeline: TimelineDataPoint[];
+}
+
+export async function createApplication(
+  payload: CreateApplicationPayload,
+  accessToken: string
+): Promise<ApplicationDto> {
+  const response = await fetch(`${API_BASE_URL}/applications`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'Accept': 'application/json',
+      'Authorization': `Bearer ${accessToken}`,
+    },
+    body: JSON.stringify(payload),
+  });
+
+  if (!response.ok) {
+    const errorData = await response.json().catch(() => ({}));
+    throw new Error(errorData.message || `Failed to create application (HTTP ${response.status})`);
+  }
+
+  return response.json();
+}
+
+export async function fetchApplications(
+  params: {
+    status?: ApplicationStatus;
+    search?: string;
+    page?: number;
+    size?: number;
+    sort?: string;
+  },
+  accessToken: string
+): Promise<PageResponse<ApplicationDto>> {
+  const searchParams = new URLSearchParams();
+  if (params.status) searchParams.append('status', params.status);
+  if (params.search) searchParams.append('search', params.search);
+  if (params.page !== undefined) searchParams.append('page', params.page.toString());
+  if (params.size !== undefined) searchParams.append('size', params.size.toString());
+  if (params.sort) searchParams.append('sort', params.sort);
+
+  const query = searchParams.toString();
+  const url = `${API_BASE_URL}/applications${query ? `?${query}` : ''}`;
+
+  const response = await fetch(url, {
+    headers: {
+      'Authorization': `Bearer ${accessToken}`,
+      'Accept': 'application/json',
+    },
+  });
+
+  if (!response.ok) {
+    const errorData = await response.json().catch(() => ({}));
+    throw new Error(errorData.message || `Failed to fetch applications (HTTP ${response.status})`);
+  }
+
+  return response.json();
+}
+
+export async function fetchAllApplications(accessToken: string): Promise<ApplicationDto[]> {
+  const response = await fetch(`${API_BASE_URL}/applications/all`, {
+    headers: {
+      'Authorization': `Bearer ${accessToken}`,
+      'Accept': 'application/json',
+    },
+  });
+
+  if (!response.ok) {
+    const errorData = await response.json().catch(() => ({}));
+    throw new Error(errorData.message || `Failed to fetch applications (HTTP ${response.status})`);
+  }
+
+  return response.json();
+}
+
+export async function fetchApplicationById(
+  id: string,
+  accessToken: string
+): Promise<ApplicationDto> {
+  const response = await fetch(`${API_BASE_URL}/applications/${id}`, {
+    headers: {
+      'Authorization': `Bearer ${accessToken}`,
+      'Accept': 'application/json',
+    },
+  });
+
+  if (!response.ok) {
+    const errorData = await response.json().catch(() => ({}));
+    throw new Error(errorData.message || `Failed to load application (HTTP ${response.status})`);
+  }
+
+  return response.json();
+}
+
+export async function updateApplication(
+  id: string,
+  payload: UpdateApplicationPayload,
+  accessToken: string
+): Promise<ApplicationDto> {
+  const response = await fetch(`${API_BASE_URL}/applications/${id}`, {
+    method: 'PUT',
+    headers: {
+      'Content-Type': 'application/json',
+      'Accept': 'application/json',
+      'Authorization': `Bearer ${accessToken}`,
+    },
+    body: JSON.stringify(payload),
+  });
+
+  if (!response.ok) {
+    const errorData = await response.json().catch(() => ({}));
+    throw new Error(errorData.message || `Failed to update application (HTTP ${response.status})`);
+  }
+
+  return response.json();
+}
+
+export async function updateApplicationStatus(
+  id: string,
+  payload: UpdateApplicationStatusPayload,
+  accessToken: string
+): Promise<ApplicationDto> {
+  const response = await fetch(`${API_BASE_URL}/applications/${id}/status`, {
+    method: 'PATCH',
+    headers: {
+      'Content-Type': 'application/json',
+      'Accept': 'application/json',
+      'Authorization': `Bearer ${accessToken}`,
+    },
+    body: JSON.stringify(payload),
+  });
+
+  if (!response.ok) {
+    const errorData = await response.json().catch(() => ({}));
+    throw new Error(errorData.message || `Failed to update status (HTTP ${response.status})`);
+  }
+
+  return response.json();
+}
+
+export async function deleteApplication(
+  id: string,
+  accessToken: string
+): Promise<void> {
+  const response = await fetch(`${API_BASE_URL}/applications/${id}`, {
+    method: 'DELETE',
+    headers: {
+      'Authorization': `Bearer ${accessToken}`,
+    },
+  });
+
+  if (!response.ok && response.status !== 204) {
+    const errorData = await response.json().catch(() => ({}));
+    throw new Error(errorData.message || `Failed to delete application (HTTP ${response.status})`);
+  }
+}
+
+export async function fetchReminders(accessToken: string): Promise<RemindersSummary> {
+  const response = await fetch(`${API_BASE_URL}/applications/reminders`, {
+    headers: {
+      'Authorization': `Bearer ${accessToken}`,
+      'Accept': 'application/json',
+    },
+  });
+
+  if (!response.ok) {
+    const errorData = await response.json().catch(() => ({}));
+    throw new Error(errorData.message || `Failed to fetch reminders (HTTP ${response.status})`);
+  }
+
+  return response.json();
+}
+
+export async function fetchCareerAnalytics(accessToken: string): Promise<CareerAnalytics> {
+  const response = await fetch(`${API_BASE_URL}/analytics/applications`, {
+    headers: {
+      'Authorization': `Bearer ${accessToken}`,
+      'Accept': 'application/json',
+    },
+  });
+
+  if (!response.ok) {
+    const errorData = await response.json().catch(() => ({}));
+    throw new Error(errorData.message || `Failed to fetch career analytics (HTTP ${response.status})`);
+  }
+
+  return response.json();
+}

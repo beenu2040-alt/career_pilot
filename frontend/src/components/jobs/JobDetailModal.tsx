@@ -11,6 +11,8 @@ import {
   HelpCircle,
   Loader2,
   Sparkles,
+  Send,
+  Check,
 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -19,6 +21,7 @@ import {
   fetchJobDetail,
   saveJob,
   unsaveJob,
+  createApplication,
 } from "@/lib/api";
 import { useAuth } from "@/context/AuthContext";
 
@@ -40,11 +43,16 @@ export const JobDetailModal: React.FC<JobDetailModalProps> = ({
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [isSaving, setIsSaving] = useState(false);
+  const [isTracking, setIsTracking] = useState(false);
+  const [trackStatus, setTrackStatus] = useState<"idle" | "tracked" | "exists">("idle");
+  const [trackFeedback, setTrackFeedback] = useState<string | null>(null);
 
   useEffect(() => {
     if (!isOpen || !jobId) {
       setJob(null);
       setError(null);
+      setTrackStatus("idle");
+      setTrackFeedback(null);
       return;
     }
 
@@ -52,6 +60,8 @@ export const JobDetailModal: React.FC<JobDetailModalProps> = ({
     const loadDetail = async () => {
       setIsLoading(true);
       setError(null);
+      setTrackStatus("idle");
+      setTrackFeedback(null);
       try {
         const data = await fetchJobDetail(jobId, accessToken);
         if (isMounted) {
@@ -93,6 +103,42 @@ export const JobDetailModal: React.FC<JobDetailModalProps> = ({
       console.error("Bookmark toggle failed:", err);
     } finally {
       setIsSaving(false);
+    }
+  };
+
+  const handleTrackApplication = async () => {
+    if (!job || !accessToken) return;
+    setIsTracking(true);
+    setTrackFeedback(null);
+    try {
+      await createApplication(
+        {
+          jobId: job.id,
+          status: "APPLIED",
+          companyName: job.company,
+          jobTitle: job.title,
+          jobUrl: job.sourceUrl || undefined,
+          jobDescription: job.description || undefined,
+        },
+        accessToken
+      );
+      setTrackStatus("tracked");
+      setTrackFeedback("Tracked in your Applications pipeline!");
+    } catch (err: unknown) {
+      const msg = (err as Error).message || "Failed to track application.";
+      if (
+        msg.toLowerCase().includes("already tracked") ||
+        msg.toLowerCase().includes("already exist") ||
+        msg.toLowerCase().includes("duplicate") ||
+        msg.includes("409")
+      ) {
+        setTrackStatus("exists");
+        setTrackFeedback("Already tracked in your Applications pipeline.");
+      } else {
+        setTrackFeedback(msg);
+      }
+    } finally {
+      setIsTracking(false);
     }
   };
 
@@ -393,6 +439,26 @@ export const JobDetailModal: React.FC<JobDetailModalProps> = ({
           )}
         </div>
 
+        {trackFeedback && (
+          <div
+            className={`px-5 py-2 text-xs flex items-center justify-between border-t ${
+              trackStatus === "tracked"
+                ? "bg-emerald-50 text-emerald-800 border-emerald-200"
+                : trackStatus === "exists"
+                ? "bg-blue-50 text-blue-800 border-blue-200"
+                : "bg-rose-50 text-rose-800 border-rose-200"
+            }`}
+          >
+            <span>{trackFeedback}</span>
+            <button
+              onClick={() => setTrackFeedback(null)}
+              className="text-slate-400 hover:text-slate-600 text-xs font-semibold ml-2"
+            >
+              &times;
+            </button>
+          </div>
+        )}
+
         {/* Footer */}
         <div className="border-t border-slate-100 p-4 sm:p-5 bg-slate-50/60 flex items-center justify-between text-xs">
           <span className="text-slate-400">
@@ -400,6 +466,44 @@ export const JobDetailModal: React.FC<JobDetailModalProps> = ({
           </span>
 
           <div className="flex items-center gap-3">
+            {user && (
+              <Button
+                variant={trackStatus === "tracked" ? "secondary" : "default"}
+                size="sm"
+                onClick={handleTrackApplication}
+                disabled={isTracking || trackStatus === "tracked" || trackStatus === "exists"}
+                className={`text-xs h-9 gap-1.5 ${
+                  trackStatus === "tracked"
+                    ? "bg-emerald-50 text-emerald-700 border border-emerald-200 hover:bg-emerald-100"
+                    : trackStatus === "exists"
+                    ? "bg-slate-100 text-slate-600 border border-slate-200"
+                    : "bg-blue-700 hover:bg-blue-800 text-white"
+                }`}
+              >
+                {isTracking ? (
+                  <>
+                    <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                    Tracking...
+                  </>
+                ) : trackStatus === "tracked" ? (
+                  <>
+                    <Check className="h-3.5 w-3.5 text-emerald-600" />
+                    Tracked in Pipeline
+                  </>
+                ) : trackStatus === "exists" ? (
+                  <>
+                    <Check className="h-3.5 w-3.5 text-slate-500" />
+                    Already Tracked
+                  </>
+                ) : (
+                  <>
+                    <Send className="h-3.5 w-3.5" />
+                    Track Application
+                  </>
+                )}
+              </Button>
+            )}
+
             {job?.sourceUrl && (
               <a
                 href={job.sourceUrl}

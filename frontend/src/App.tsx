@@ -1,8 +1,6 @@
 import React from "react";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import {
-  Wand2,
-  Send,
   Settings,
 } from "lucide-react";
 import { AuthProvider } from "@/context/AuthContext";
@@ -21,6 +19,8 @@ import { DashboardPage } from "@/pages/DashboardPage";
 import { ProfilePage } from "@/pages/ProfilePage";
 import { JobsPage } from "@/pages/jobs/JobsPage";
 import { ResumePage } from "@/pages/resume/ResumePage";
+import { ResumeTailorPage } from "@/pages/resume/ResumeTailorPage";
+import { ApplicationsPage } from "@/pages/applications/ApplicationsPage";
 import { RoadmapPage } from "@/pages/roadmap/RoadmapPage";
 import { PlaceholderPage } from "@/pages/PlaceholderPage";
 import { NotFoundPage } from "@/pages/NotFoundPage";
@@ -62,43 +62,11 @@ export const App: React.FC = () => {
               {/* 3. Career Roadmap (Phase 5 Full Feature) */}
               <Route path="roadmap" element={<RoadmapPage />} />
 
-              {/* 4. Resume Tailor (Phase 4 Roadmap) */}
-              <Route
-                path="resume-tailor"
-                element={
-                  <PlaceholderPage
-                    title="Resume Tailor"
-                    phase="Phase 4 Roadmap"
-                    description="Targeted resume bullet customization matching specific job descriptions to maximize screening success."
-                    icon={<Wand2 className="h-7 w-7 text-amber-700" />}
-                    plannedFeatures={[
-                      "Job description requirement alignment engine",
-                      "Contextual bullet point rewrites emphasizing relevant achievements",
-                      "Skill keyword highlighting and integration guidance",
-                      "Versioned resume export tailored for individual submissions",
-                    ]}
-                  />
-                }
-              />
+              {/* 4. Resume Tailor (Phase 6 Full Feature) */}
+              <Route path="resume-tailor" element={<ResumeTailorPage />} />
 
-              {/* 5. Applications (Phase 4 Roadmap) */}
-              <Route
-                path="applications"
-                element={
-                  <PlaceholderPage
-                    title="Application Tracker"
-                    phase="Phase 4 Roadmap"
-                    description="End-to-end pipeline management for job applications, interview schedules, recruiter contacts, and offers."
-                    icon={<Send className="h-7 w-7 text-blue-700" />}
-                    plannedFeatures={[
-                      "Multi-stage Kanban tracking (Bookmarked, Applied, Screening, Interviewing, Offer)",
-                      "Interview timeline logs and reminder notes",
-                      "Salary negotiation benchmarking notes",
-                      "Application status analytics and response rate metrics",
-                    ]}
-                  />
-                }
-              />
+              {/* 5. Applications (Phase 7 Full Feature) */}
+              <Route path="applications" element={<ApplicationsPage />} />
 
               {/* 6. Settings (Phase 2 Preview) */}
               <Route
